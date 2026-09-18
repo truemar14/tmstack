@@ -1,0 +1,13 @@
+{
+  "name": "tmstack",
+  "owner": { "name": "Mariyan Damyanov" },
+  "metadata": { "description": "Plugins of function hooks (Claude Mods). Add this checkout as a directory marketplace: claude plugin marketplace add <path to tmstack>" },
+  "plugins": [
+    {
+      "name": "speak",
+      "source": "./speak-mod",
+      "description": "Replies read aloud with a Fish Audio or ElevenLabs voice; /speak; playback controls above the prompt.",
+      "license": "MIT"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "name": "speak",
+  "version": "0.2.0",
+  "description": "Reads Claude's replies aloud with a neural voice from Fish Audio or ElevenLabs. In voice mode every answer's Spoken paragraph is read; /speak reads the last reply, speaks text, or asks the model for a spoken summary. Playback controls (pause, back and forward 5 s, stop, replay) sit above the prompt. Needs function hooks (early access) and a terminal with speakers.",
+  "author": { "name": "Mariyan Damyanov" },
+  "license": "MIT",
+  "keywords": ["voice", "tts", "speech", "fish-audio", "elevenlabs", "function-hooks"],
+  "userConfig": {
+    "engine": {
+      "type": "string",
+      "title": "Voice engine",
+      "description": "fish (Fish Audio) or elevenlabs. `/speak engine <name>` switches without touching this.",
+      "default": "fish"
+    },
+    "fish_api_key": {
+      "type": "string",
+      "title": "Fish Audio API key",
+      "description": "Bearer key for api.fish.audio. Left empty, the FISH_API_KEY environment variable is used.",
+      "sensitive": true
+    },
+    "fish_voice": {
+      "type": "string",
+      "title": "Fish voice id",
+      "description": "The reference_id of the voice (empty = Fish's default voice). Default is Paula.",
+      "default": "c2623f0c075b4492ac367989aee1576f"
+    },
+    "fish_model": {
+      "type": "string",
+      "title": "Fish model",
+      "description": "The model header sent to Fish Audio: s2.1-pro-free on the free tier, s2.1-pro or s1 with credit.",
+      "default": "s2.1-pro-free"
+    },
+    "elevenlabs_api_key": {
+      "type": "string",
+      "title": "ElevenLabs API key",
+      "description": "The xi-api-key for api.elevenlabs.io. Left empty, the ELEVENLABS_API_KEY environment variable is used.",
+      "sensitive": true
+    },
+    "elevenlabs_voice": {
+      "type": "string",
+      "title": "ElevenLabs voice id",
+      "description": "A voice id from your ElevenLabs library. Default is Sarah, a premade voice.",
+      "default": "EXAVITQu4vr4xnSDxMaL"
+    },
+    "elevenlabs_model": {
+      "type": "string",
+      "title": "ElevenLabs model",
+      "description": "eleven_flash_v2_5 (fast, half the credits), eleven_multilingual_v2 or eleven_v3.",
+      "default": "eleven_flash_v2_5"
+    },
+    "speed": {
+      "type": "number",
+      "title": "Speech speed",
+      "description": "1.0 is normal; 1.05 is a touch brisk. ElevenLabs accepts 0.7 to 1.2.",
+      "default": 1.05,
+      "min": 0.5,
+      "max": 2
+    },
+    "remote_playback": {
+      "type": "string",
+      "title": "Play on the machine you connected from",
+      "description": "auto: when this session came in over SSH, play on that client through its own speak mod (it needs an SSH server and the mod installed). off: always play here. Or an SSH host name to always play on.",
+      "default": "auto"
+    },
+    "focus_gate": {
+      "type": "boolean",
+      "title": "Only read the focused session",
+      "description": "Inside Herdr, a reply from a session that is not the focused pane is held silently until you switch to it (dropped by a new prompt there, or after 15 minutes).",
+      "default": true
+    },
+    "media_pause": {
+      "type": "boolean",
+      "title": "Pause media while speaking",
+      "description": "Windows only: pause whatever media apps are playing before the voice starts and resume them after the last queued reply.",
+      "default": true
+    }
+  }
+}
