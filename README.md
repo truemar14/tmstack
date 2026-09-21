@@ -1,4 +1,4 @@
-# tmstack
+# TMStack
 
 Skills for Claude Code and Codex, plus one Claude Code plugin, shared across
 every machine I work on. Each top-level directory with a `SKILL.md` is one
