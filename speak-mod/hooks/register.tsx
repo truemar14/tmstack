@@ -7,7 +7,7 @@
 // the prompt shows progress with pause, back and forward 5 s, stop and replay.
 //
 // Playback itself runs in a detached player process per reply (player/win.ps1, player/linux.sh):
-// it fetches the clips from Fish Audio, takes turns with other sessions, waits for its session to
+// it fetches the clips from the configured engine, takes turns with other sessions, waits for its session to
 // be the focused Herdr pane, and answers the commands this module writes (see protocol.ts). The
 // module only starts it, polls its state file for the band, and writes commands.
 //

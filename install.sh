@@ -8,11 +8,12 @@
 # repo and a private repo holding AGENTS.md install side by side.
 # Links into this repo are re-pointed and removed when their skill folder is gone; a symlink to anywhere
 # else, or a real file or directory in the way, is left alone and reported.
-# Usage: ./install.sh [--dry-run]     (on Windows use install.ps1: Git Bash cannot make symlinks)
+# Usage: ./install.sh [--dry-run]     (Linux and macOS; on Windows use install.ps1, since Git Bash
+# makes copies instead of symlinks unless Developer Mode is on)
 set -euo pipefail
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 case ${1:-} in '') DRY= ;; --dry-run) DRY=1 ;; *) echo "usage: $0 [--dry-run]" >&2; exit 2 ;; esac
-case $(uname -s) in Linux) PLATFORM=linux ;; Darwin) PLATFORM=darwin ;; *) echo "on Windows run install.ps1" >&2; exit 2 ;; esac
+case $(uname -s) in Linux) PLATFORM=linux ;; Darwin) PLATFORM=darwin ;; *) echo "install.sh supports Linux and macOS; on Windows run install.ps1" >&2; exit 2 ;; esac
 
 # field <SKILL.md> <key>: the value of "  key: [a, b]" (or "  key: a") inside the frontmatter, as "a b",
 # quotes stripped; empty if absent

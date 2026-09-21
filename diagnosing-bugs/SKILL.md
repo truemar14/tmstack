@@ -16,7 +16,7 @@ metadata:
 # Diagnosing Bugs
 
 A discipline for hard bugs. Skip a phase only when you can say why. Check the
-ADRs (see the `domain-modeling` skill) for the area you are about to touch.
+ADRs (usually `docs/adr/`) for the area you are about to touch.
 
 ## Bugs that arrive from elsewhere
 
@@ -66,7 +66,8 @@ causes. Spend disproportionate effort here.
 10. **A person at the screen.** Last resort, for a bug only a human can
     trigger. Write the steps as a numbered list and say exactly what to
     capture at each one (a screenshot, a log line, a timestamp). In voice
-    mode, keep the list short and put it in the spoken part.
+    mode, keep the list short and put it in the spoken part (the speak
+    plugin's `Spoken:` paragraph).
 
 ### Tighten the loop
 

@@ -38,12 +38,13 @@ otherwise:
 [actual reply]
 ```
 
-Screenshots and videos help as well. Use the `file-upload` skill when needed.
+When a fix is easier to see than to describe, a screenshot or recording of
+the fixed state goes in the reply, through the `file-upload` skill.
 
 Do not let review feedback expand the PR beyond the user's original goal.
 Address real shortcomings, but avoid scope creep.
 
-If nothing has changed, stay quiet rather than posting filler comments. Done
+Done
 means the required checks are green on the latest commit and every review-bot
 thread has been addressed; in a repo without bots, checks and human comments
 are all that count. Merge only when the user explicitly requested it; otherwise

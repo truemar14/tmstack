@@ -6,7 +6,8 @@
 # or Developer Mode is on, and copies otherwise, refreshed on every run. Links into this repo
 # are re-pointed and removed when their skill folder is gone; a link to anywhere else, or a real
 # directory in the way, is left alone and reported.
-# Usage: powershell -File install.ps1 [-DryRun]
+# Usage: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 [-DryRun]
+[CmdletBinding()]
 param([switch]$DryRun)
 $repo = $PSScriptRoot
 $harnesses = @(); foreach ($h in 'claude', 'codex') { if (Test-Path "$HOME\.$h") { $harnesses += $h } }

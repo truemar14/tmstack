@@ -29,10 +29,9 @@ and router skills.
   fallback.
 - A skill adapted from elsewhere keeps a `license:` line in its frontmatter
   and the source's notice in `LICENSE.txt` next to it.
-- Three house rules apply inside every skill here: no em dashes, en dashes
-  or arrows; mock-first for visual work; no destructive action the user did
-  not ask for. `frontend-design` is the one exception, copied verbatim from
-  upstream.
+- Two house rules apply inside every skill here: no em dashes, en dashes or
+  arrows, and no destructive action the user did not ask for.
+  `frontend-design` is exempt from the first, copied verbatim from upstream.
 - A skill in this repo names no machine, person or company. Those belong in
   the user's private instructions; a skill says "the user" and reads the
   rest from there.

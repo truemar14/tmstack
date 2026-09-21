@@ -71,7 +71,8 @@ environment variable, never on disk.
    [fish.audio](https://fish.audio) and [elevenlabs.io](https://elevenlabs.io).
    The Linux player also reads a key from `~/.secrets` when that file exists,
    as a `KEY=value` line.
-3. Linux only: `curl`, `python3` and `mpv` on the PATH.
+3. Linux only: `curl`, `python3`, `mpv` and util-linux (`flock`, `setsid`)
+   on the PATH.
 
 Develop with `claude --plugin-dir speak-mod` (`--debug` names what the engine
 refused); `claude plugin validate speak-mod` shows what the module hooks and
@@ -92,8 +93,8 @@ own media pausing; only text and progress cross the network. The client is found
 re-attaches) and named through `tailscale whois`; `~/.ssh/config` on the box
 supplies the user (`Host <client hostname>` / `User <windows user>`).
 
-One-time per client: the mod installed there, and an SSH server that accepts
-the box's key. On Linux, Tailscale SSH does it. On Windows the built-in OpenSSH
+One-time per client: the mod installed there and one session started (that
+writes the launcher), and an SSH server that accepts the box's key. On Linux, Tailscale SSH does it. On Windows the built-in OpenSSH
 server reads administrator keys from `C:\ProgramData\ssh\administrators_authorized_keys`;
 `player/authorize-client.ps1`, run once from an elevated PowerShell, fetches
 the box's public key over SSH and adds it. That grants the box a full

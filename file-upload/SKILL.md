@@ -39,9 +39,7 @@ curl -sS --fail-with-body -X DELETE \
 ```
 
 204 when gone, 404 when there was nothing under that key. Delete only what
-the user asks to remove or what a re-upload has replaced. The host tells search
-engines not to index anything (`X-Robots-Tag: noindex`), so a link is the only
-way to a file; it stays readable to anyone holding the link until deleted.
+the user asks to remove or what a re-upload has replaced.
 
 ## List
 

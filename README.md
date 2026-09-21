@@ -8,21 +8,20 @@ The repo holds only the general skills. Personal instructions (`AGENTS.md`),
 machine inventories and anything that names a specific host live in a private
 repo with the same layout, installed side by side with this one. The installer
 links instruction files only when a checkout has them, so both repos can run
-it. The private repo carries its own copy of the installer, so the two can
-drift; this one is the reference.
+it.
 
 ## Install
 
 ```bash
-git clone https://github.com/marians1d/tmstack ~/projects/tmstack
+git clone https://github.com/truemar14/tmstack ~/projects/tmstack
 ~/projects/tmstack/install.sh          # add --dry-run to preview
 ```
 
 On Windows, from PowerShell:
 
 ```powershell
-git clone https://github.com/marians1d/tmstack $HOME\Work\tmstack
-powershell -File $HOME\Work\tmstack\install.ps1    # add -DryRun to preview
+git clone https://github.com/truemar14/tmstack $HOME\Work\tmstack
+powershell -NoProfile -ExecutionPolicy Bypass -File $HOME\Work\tmstack\install.ps1    # add -DryRun to preview
 ```
 
 The installer symlinks every skill allowed on this platform into
@@ -36,8 +35,8 @@ Not done by the installer:
 - `FILE_HOST_URL` and `FILE_HOST_TOKEN` in the shell environment (file-upload,
   html-communication). The host is your own deployment of
   `file-upload/worker/`, a Cloudflare Worker backed by R2; its README has the
-  four deploy steps. The token is the worker's `UPLOAD_TOKEN` secret under
-  its client name.
+  four deploy steps. `FILE_HOST_TOKEN` holds the same value as the worker's
+  `UPLOAD_TOKEN` secret.
 - The speak plugin (voice mode): function hooks on, the repo added as the
   `tmstack` marketplace, `speak@tmstack` installed, an engine key set. See
   `speak-mod/README.md`.

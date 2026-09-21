@@ -29,7 +29,8 @@ Recommended: <your recommended answer>
 ```
 
 When voice mode is on, keep a round to four questions at most and put the
-recommendations in the spoken part, so the user can answer from what they heard.
+recommendations in the spoken part (the speak plugin's `Spoken:` paragraph),
+so the user can answer from what they heard.
 
 Each round the user answers reshapes the tree: settled decisions push the
 frontier outward and unblock questions that depended on them. Recompute the

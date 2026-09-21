@@ -24,8 +24,9 @@ UI mocks. Not for HTML that ships as part of a product.
   which has no Artifact tool. The `file-upload` skill holds the host's rules:
   what may never go up, in-place updates, and the 401 case.
 
-This skill makes HTML pages. When the user asks for a "doc", make a Claude doc
-through the Claude Docs connector; when they ask for "slides" or a deck, make a
+This skill makes HTML pages. On Claude Code, when the user asks for a "doc",
+make a Claude doc through the Claude Docs connector; when they ask for
+"slides" or a deck, make a
 Slides artifact. A plan, report or review with no format named is an HTML page.
 
 ## Document
@@ -64,8 +65,8 @@ When the user asks for variants:
 ## Publish
 
 Publishing is part of this skill, not a separate step: every document it
-creates or updates goes to one of the two venues before the reply ends, in
-Auto mode too, without a further permission question. An Artifact starts
+creates or updates goes to one of the two venues before the reply ends,
+without asking for permission first. An Artifact starts
 private, so the default venue exposes nothing; a user who wants to be asked
 before the file host route says so in their instructions.
 
@@ -84,5 +85,4 @@ before the upload succeeds.
 
 Verification is separate from publishing and optional. Where browser tools are
 available, open the URL, check it at desktop and phone widths, and fix what is
-wrong before reporting. Skip it on a headless box; do not install a browser
-for it.
+wrong before reporting. Skip it on a headless box.

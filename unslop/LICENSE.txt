@@ -1,8 +1,8 @@
-Adapted from the unslop skill in backnotprop/pstack, https://github.com/backnotprop/pstack
+Adapted from the unslop skill in backnotprop/pstack, https://github.com/backnotprop/pstack, a mirror of cursor/plugins/pstack
 
 MIT License
 
-Copyright (c) Lauren Tan
+Copyright (c) 2026 Lauren Tan
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

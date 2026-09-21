@@ -45,5 +45,8 @@ export FILE_HOST_URL=https://files.example.com
 export FILE_HOST_TOKEN=<the token>
 ```
 
+On Windows, `setx FILE_HOST_URL https://files.example.com` and
+`setx FILE_HOST_TOKEN <the token>` from any PowerShell, then open a new one.
+
 The `file-upload` skill reads both. Reads need no token, so keep links to
 anything sensitive to yourself; the host is unindexed, not private.
