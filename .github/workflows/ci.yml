@@ -13,4 +13,4 @@ jobs:
       - run: mkdir -p "$HOME/.claude" && ./install.sh --dry-run
         env:
           HOME: ${{ runner.temp }}/home
-      - run: sudo apt-get install -y shellcheck && shellcheck install.sh speak-mod/player/*.sh
+      - run: sudo apt-get install -y shellcheck && shellcheck install.sh
