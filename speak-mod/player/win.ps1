@@ -1,15 +1,16 @@
 # win.ps1 - Windows player for the speak mod. One detached, hidden Windows PowerShell 5.1 (STA) process
 # per reply, started by the hooks module (see hooks/protocol.ts):
 #   powershell -NoProfile -STA -ExecutionPolicy Bypass -File win.ps1 <base>.json
-# The job file { base, chunks, voice, speed, model, gate, session, mediaPause } is read once and deleted.
-# FISH_API_KEY comes from the environment (the module sets it when it starts this process).
+# The job file { base, chunks, engine, voice, speed, model, gate, session, mediaPause, remote } is read
+# once and deleted. The engine's key comes from the environment: SPEAK_API_KEY (the module sets it when
+# it starts this process), else FISH_API_KEY or ELEVENLABS_API_KEY.
 #
 # Protocol with the module, files next to <base>:
 #   <base>.state  written here a few times a second: {phase, chunk, n, fraction, paused, message}
 #                 phase: held | fetching | playing | done | stopped | error | expired
 #   <base>.cmd    written by the module, one word, consumed here: stop pause resume back fwd replay
 #
-# What happens: the text's clips are fetched from Fish Audio two ahead of the one playing (Fish
+# What happens: the text's clips are fetched from the configured engine two ahead of the one playing (Fish
 # generates at ~4x realtime, so the first short clip plays after ~3 s). In gated mode the reply is
 # held silently until its session is the focused Herdr pane (dropped after 15 min). Players take
 # turns across sessions through a lock, so voices never overlap. Media apps that were playing are

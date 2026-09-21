@@ -11,8 +11,7 @@ metadata:
 
 First find out what review automation this repo actually has: look at the
 checks and the comment authors on a few recently merged PRs. Bots may report
-through checks, reviews, or plain comments, and some repos have none. They are
-helpful when present, even if not always right.
+through checks, reviews, or plain comments, and some repos have none.
 
 If your harness offers a way to wait on a PR or poll on an interval, use it so
 you can respond when comments arrive. Otherwise, poll the PR for new comments
@@ -28,11 +27,12 @@ makes this one obsolete, stop monitoring, report it to the user, and ask before
 closing the PR unless closure was explicitly authorized.
 
 If a review bot leaves feedback you believe is not worth addressing, reply and
-resolve the comment. Format comments left on the user's behalf as, with
-the user's name from their instructions:
+resolve the comment. Format comments left on the user's behalf as below,
+with the user's name when their instructions give one and "THE AUTHOR"
+otherwise:
 
 ```md
-[MODEL-SLUG] RESPONDING ON BEHALF OF <USER NAME>
+[<your model name>] RESPONDING ON BEHALF OF <USER NAME>
 -----
 
 [actual reply]

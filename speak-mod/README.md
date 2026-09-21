@@ -19,8 +19,9 @@ shelled out around it. Codex has no function hooks and no voice mode.
 - A band above the prompt shows what is being read with a progress line and
   buttons: back and forward 5 s, pause, stop; after the reply, replay (kept
   20 minutes) and close.
-- A new prompt stops this session's reading. Inside Herdr, a reply from a
-  session that is not the focused pane is held until you switch to it. Voices
+- A new prompt stops this session's reading. Inside [Herdr](https://herdr.dev),
+  a terminal workspace for agent sessions, a reply from a session that is not
+  the focused pane is held until you switch to it. Voices
   never overlap across sessions. On Windows, media apps that were playing are
   paused for the duration.
 
@@ -38,7 +39,7 @@ shelled out around it. Codex has no function hooks and no voice mode.
 | `player/linux.sh` | Linux player: same protocol over mpv's IPC socket (needs curl, python3, mpv). Hands over to `remote.sh` when the session came in over SSH. |
 | `player/remote.sh` | Drives the SSH client's own player in stdio mode and mirrors its state, so a box without speakers plays through the machine you sit at. |
 | `player/authorize-client.ps1` | One-time, elevated: authorizes a box's SSH key on this Windows machine so it can play here. |
-| `tests/` | Pure-logic tests: `node --test tests/args.test.ts tests/speakable.test.ts`. |
+| `tests/` | Pure-logic tests: `node --test "tests/*.test.ts"` (Node 22.18 or newer strips the types itself). |
 
 ## How it works
 
@@ -66,11 +67,11 @@ environment variable, never on disk.
 
    Then set the engine's key under `/config` (rows "speak: Fish Audio API
    key" / "speak: ElevenLabs API key"); without it the `FISH_API_KEY` /
-   `ELEVENLABS_API_KEY` environment variable is used.
-3. A machine that ran the former `speak` skill (deleted 2026-09-15): remove
-   its `Stop` and `UserPromptSubmit` hooks from `settings.json` and its link
-   under `~/.claude/skills`; the engine refuses to register `/speak` while the
-   skill's command exists.
+   `ELEVENLABS_API_KEY` environment variable is used. Keys come from
+   [fish.audio](https://fish.audio) and [elevenlabs.io](https://elevenlabs.io).
+   The Linux player also reads a key from `~/.secrets` when that file exists,
+   as a `KEY=value` line.
+3. Linux only: `curl`, `python3` and `mpv` on the PATH.
 
 Develop with `claude --plugin-dir speak-mod` (`--debug` names what the engine
 refused); `claude plugin validate speak-mod` shows what the module hooks and
@@ -111,6 +112,9 @@ see the desktop's media sessions.
 Windows: Windows PowerShell 5.1 (the player), speakers. Linux with speakers:
 curl, python3, mpv. Linux without speakers (a remote dev box): curl, python3, ssh and
 tailscale, playing through the client as above; PulseAudio over Tailscale is
-not needed for playback (dictation input is a separate matter).
+not needed for playback (dictation input is a separate matter). macOS is not
+supported: the Linux player leans on GNU `stat`, `flock`, `mapfile` and
+`date +%N`.
 
 Early access: the function-hooks API may change between Claude Code releases.
+Built against Claude Code 2.1.

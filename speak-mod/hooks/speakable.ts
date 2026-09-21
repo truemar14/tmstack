@@ -1,5 +1,4 @@
 // Pure text functions: what of a reply is spoken and how it is cut into clips.
-// Ported from speak.ps1 (ConvertTo-Speakable, Split-Chunks) so the voice reads the same as before.
 
 // Turns markdown into something that reads well aloud: tables become "cell, cell, cell." sentences,
 // headings and bullets lose their markers (headings gain a period so the voice pauses), links keep

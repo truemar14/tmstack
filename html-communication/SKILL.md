@@ -21,9 +21,8 @@ UI mocks. Not for HTML that ships as part of a product.
 - **File host** (`$FILE_HOST_URL`, via the `file-upload` skill): when
   the link must open without a Claude login (a PR description, a mock set for
   the team), when the user says "public" or "upload", and always from Codex,
-  which has no Artifact tool. The host is link-only and unindexed, but anyone
-  with the link can read: never include secrets, private URLs, or local
-  filesystem paths.
+  which has no Artifact tool. The `file-upload` skill holds the host's rules:
+  what may never go up, in-place updates, and the 401 case.
 
 This skill makes HTML pages. When the user asks for a "doc", make a Claude doc
 through the Claude Docs connector; when they ask for "slides" or a deck, make a
@@ -41,7 +40,6 @@ One self-contained HTML file, capped at 512 KB.
   style everything through its tokens: pages then look alike and follow the
   viewer's theme. This is the document's own style; it does not apply inside
   UI mocks (below).
-- Make it mobile-readable with a responsive viewport and no fixed-width layout.
 - Use semantic HTML, inline CSS, inline SVG, and HTTPS or data-URL images. No
   linked stylesheets, external or module scripts, frames, embeds, or forms.
 - Use an inline classic script only when interactivity materially helps, and
@@ -65,21 +63,22 @@ When the user asks for variants:
 
 ## Publish
 
-The user has given standing permission to publish every document created or
-updated with this skill, to either venue. Publishing is required, including in
-Auto mode. Do not ask for separate permission or stop at the local file.
+Publishing is part of this skill, not a separate step: every document it
+creates or updates goes to one of the two venues before the reply ends, in
+Auto mode too, without a further permission question. An Artifact starts
+private, so the default venue exposes nothing; a user who wants to be asked
+before the file host route says so in their instructions.
 
 Artifact: write the file, call the Artifact tool on it (favicon on the first
 publish; load `artifact-design` first), report the URL. To update, call it
 again with the same file path, or with `url` for an Artifact from an earlier
 session.
 
-File host: write the file, upload it with the `file-upload` skill (PUT to
-`$FILE_HOST_URL`), report the local path and the returned URL. To
-update, PUT to the filename from the previously returned URL. Upload under a
-fresh name only when a separate new draft is wanted. On HTTP 401, report that
-`FILE_HOST_TOKEN` is wrong or unset instead of retrying. Never claim the
-document is hosted before the upload succeeds.
+File host: write the file, upload it with the `file-upload` skill, report the
+local path and the returned URL. To update, PUT to the filename from the
+previously returned URL, as that skill describes. Upload under a fresh name
+only when a separate new draft is wanted. Never claim the document is hosted
+before the upload succeeds.
 
 ## Verify
 

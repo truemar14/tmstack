@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # linux.sh - Linux player for the speak mod. One detached process per reply, started by the hooks
 # module (see hooks/protocol.ts): bash linux.sh <base>.json
-# The job file { base, chunks, voice, speed, model, gate, session, mediaPause } is read once and
-# deleted. FISH_API_KEY comes from the environment. Needs curl, python3 and mpv.
+# The job file { base, chunks, engine, voice, speed, model, gate, session, mediaPause, remote } is read
+# once and deleted. The engine's key comes from the environment: SPEAK_API_KEY (set by the module), else
+# FISH_API_KEY or ELEVENLABS_API_KEY, read from ~/.secrets too. Needs curl, python3 and mpv.
 #
 # Same protocol as win.ps1, files next to <base>:
 #   <base>.state  written here a few times a second: {phase, chunk, n, fraction, paused, message}

@@ -3,14 +3,14 @@ name: file-upload
 description: Upload a local file to the public file host and get back a permanent URL. Use when the user asks to upload a file, or when a screenshot, recording, HTML page, or other file needs a public URL, such as for a PR description.
 metadata:
   harness: [claude, codex]
-  platform: [win32, linux]
+  platform: [win32, linux, darwin]
   scope: fleet
-  requires: "FILE_HOST_URL and FILE_HOST_TOKEN in the environment"
+  requires: "curl; FILE_HOST_URL and FILE_HOST_TOKEN in the environment (see worker/README.md)"
 ---
 
 # File upload
 
-Upload files to the host at `$FILE_HOST_URL` and return the permanent public URL from the response body. Authenticate with `FILE_HOST_TOKEN`. If either variable is unset, tell the user instead of guessing. The host is a Cloudflare Worker backed by R2; its source lives in `file-upload/worker/` in this repo, and the user deploys their own copy under their own domain.
+Upload files to the host at `$FILE_HOST_URL` and return the permanent public URL from the response body. Authenticate with `FILE_HOST_TOKEN`. If either variable is unset, tell the user instead of guessing. The host is a Cloudflare Worker backed by R2; its source and deploy steps live in `file-upload/worker/` in this repo, and the user deploys their own copy under their own domain.
 
 ## Upload
 

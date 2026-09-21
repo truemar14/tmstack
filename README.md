@@ -8,7 +8,8 @@ The repo holds only the general skills. Personal instructions (`AGENTS.md`),
 machine inventories and anything that names a specific host live in a private
 repo with the same layout, installed side by side with this one. The installer
 links instruction files only when a checkout has them, so both repos can run
-it.
+it. The private repo carries its own copy of the installer, so the two can
+drift; this one is the reference.
 
 ## Install
 
@@ -34,8 +35,9 @@ Not done by the installer:
 
 - `FILE_HOST_URL` and `FILE_HOST_TOKEN` in the shell environment (file-upload,
   html-communication). The host is your own deployment of
-  `file-upload/worker/`, a Cloudflare Worker backed by R2, deployed with
-  wrangler.
+  `file-upload/worker/`, a Cloudflare Worker backed by R2; its README has the
+  four deploy steps. The token is the worker's `UPLOAD_TOKEN` secret under
+  its client name.
 - The speak plugin (voice mode): function hooks on, the repo added as the
   `tmstack` marketplace, `speak@tmstack` installed, an engine key set. See
   `speak-mod/README.md`.
@@ -66,7 +68,8 @@ grilling, domain-modeling, writing-for-agents and diagnosing-bugs are adapted
 from Matt Pocock's skills (1.2.3, MIT), unslop from backnotprop/pstack (MIT)
 and frontend-design is copied verbatim from anthropics/skills (Apache 2.0);
 each keeps the source notice in its `LICENSE.txt`. Everything else is MIT, see
-`LICENSE`.
+`LICENSE`. frontend-design is also the one file exempt from the house style
+in `writing-for-agents` (it keeps upstream's dashes).
 
 ## Plugin
 

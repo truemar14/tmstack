@@ -1,4 +1,4 @@
-// node --test tests/  (Node 22.18+ strips the types itself)
+// node --test "tests/*.test.ts"  (Node 22.18+ strips the types itself)
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spokenOf, splitChunks, toSpeakable } from '../hooks/speakable.ts'

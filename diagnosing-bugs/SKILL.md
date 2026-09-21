@@ -16,7 +16,7 @@ metadata:
 # Diagnosing Bugs
 
 A discipline for hard bugs. Skip a phase only when you can say why. Check the
-ADRs for the area you are about to touch.
+ADRs (see the `domain-modeling` skill) for the area you are about to touch.
 
 ## Bugs that arrive from elsewhere
 

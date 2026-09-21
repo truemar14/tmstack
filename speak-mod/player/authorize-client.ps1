@@ -1,7 +1,7 @@
 # authorize-client.ps1 - lets a remote machine (a dev box reached over SSH) play through this Windows machine's speakers
 # by adding its SSH public key to the file Windows OpenSSH reads for administrator accounts.
 # Run once from an ELEVATED PowerShell (the file is admin-only by design):
-#   powershell -ExecutionPolicy Bypass -File authorize-client.ps1 [-Box <ssh host>]
+#   powershell -ExecutionPolicy Bypass -File authorize-client.ps1 -Box <ssh host>
 # It fetches ~/.ssh/id_ed25519.pub from that host over SSH (so nothing is pasted by hand), appends
 # it unless present, and (re)sets the ACL the sshd service insists on: Administrators and SYSTEM only.
 # The OpenSSH server itself must already be installed and running (Get-Service sshd).

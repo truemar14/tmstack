@@ -1,5 +1,5 @@
 /* @jsx h */
-// speak: Claude's replies read aloud with a Fish Audio voice, as a mod.
+// speak: Claude's replies read aloud with the configured engine's voice, as a mod.
 //
 // In voice mode (Claude Code's own /voice switch, or `/speak on`) every answer's final "Spoken:"
 // paragraph is read aloud; the prompt hook asks the model for that paragraph as hidden context.

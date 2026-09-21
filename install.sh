@@ -8,11 +8,11 @@
 # repo and a private repo holding AGENTS.md install side by side.
 # Links into this repo are re-pointed and removed when their skill folder is gone; a symlink to anywhere
 # else, or a real file or directory in the way, is left alone and reported.
-# Usage: ./install.sh [--dry-run]
+# Usage: ./install.sh [--dry-run]     (on Windows use install.ps1: Git Bash cannot make symlinks)
 set -euo pipefail
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-DRY=${1:-}
-case $(uname -s) in Linux) PLATFORM=linux ;; Darwin) PLATFORM=darwin ;; *) PLATFORM=win32 ;; esac
+case ${1:-} in '') DRY= ;; --dry-run) DRY=1 ;; *) echo "usage: $0 [--dry-run]" >&2; exit 2 ;; esac
+case $(uname -s) in Linux) PLATFORM=linux ;; Darwin) PLATFORM=darwin ;; *) echo "on Windows run install.ps1" >&2; exit 2 ;; esac
 
 # field <SKILL.md> <key>: the value of "  key: [a, b]" (or "  key: a") inside the frontmatter, as "a b",
 # quotes stripped; empty if absent
@@ -33,10 +33,10 @@ link() {   # link <target> <path>
 }
 
 harnesses=(); [[ -d ~/.claude ]] && harnesses+=(claude); [[ -d ~/.codex ]] && harnesses+=(codex)
-echo "platform $PLATFORM, harnesses: ${harnesses[*]:-none}${DRY:+ (dry run)}"
+if ((${#harnesses[@]} == 0)); then echo "no ~/.claude or ~/.codex here: install Claude Code or Codex first" >&2; exit 1; fi
+echo "platform $PLATFORM, harnesses: ${harnesses[*]}${DRY:+ (dry run)}"
 
-for h in "${harnesses[@]}"; do
-  [[ -f $REPO/AGENTS.md ]] || continue
+[[ -f $REPO/AGENTS.md ]] && for h in "${harnesses[@]}"; do
   echo "instructions -> ~/.$h"
   link "$REPO/AGENTS.md" ~/."$h"/AGENTS.md
   [[ $h == claude && -f $REPO/CLAUDE.md ]] && link "$REPO/CLAUDE.md" ~/.claude/CLAUDE.md

@@ -21,16 +21,18 @@ and router skills.
 
 - Every skill carries the `metadata` block the installer reads: `harness`
   (`claude`, `codex`, default both), `platform` (`win32`, `linux`,
-  `darwin`; a general skill lists all three), `scope` (`fleet` or the
-  machine it belongs to), and `requires` when the skill needs something the installer does not set up.
+  `darwin`; a general skill lists all three), `scope` (`fleet` here; a
+  private repo with the same layout uses it to mark skills bound to one
+  machine), and `requires` when the skill needs something the installer does not set up.
   A skill works under both harnesses unless `harness` says otherwise, so
   nothing in it may depend on a tool only one of them has without naming the
   fallback.
 - A skill adapted from elsewhere keeps a `license:` line in its frontmatter
   and the source's notice in `LICENSE.txt` next to it.
-- The house rules from the user's `AGENTS.md` apply inside skills too: here,
-  no em dashes, mock-first for visual work, no destructive action the user did
-  not ask for.
+- Three house rules apply inside every skill here: no em dashes, en dashes
+  or arrows; mock-first for visual work; no destructive action the user did
+  not ask for. `frontend-design` is the one exception, copied verbatim from
+  upstream.
 - A skill in this repo names no machine, person or company. Those belong in
   the user's private instructions; a skill says "the user" and reads the
   rest from there.

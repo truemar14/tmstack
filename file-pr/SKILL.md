@@ -30,8 +30,8 @@ the blocker to the user with its output.
    rebased branch.
 6. **Show it.** A change with a visible result, a UI state, a rendered page,
    CLI output, gets a screenshot, and a flow gets a short recording. Capture
-   it from the app, already running or started with the `run` skill or the
-   browser tools when the harness has them; otherwise ask the user for the
+   it from the app, already running or started with the harness's `run`
+   skill or browser tools when it has them; otherwise ask the user for the
    file. When the `file-upload` skill and its token are present, upload with
    it and embed as it describes; otherwise keep the file locally and put its
    path in the description so the user can drop it in themselves. Done: the
@@ -43,8 +43,9 @@ the blocker to the user with its output.
    `--force-with-lease` when the branch was pushed before the rebase. New PR:
    `gh pr create --base <base> --title <title> --body-file <file>` without
    `--draft`, so review automation runs. Existing PR: `gh pr edit --title
-   <title> --body-file <file>`. Write the body file outside the repo; a
-   multi-line `--body` argument breaks on PowerShell quoting. Done:
+   <title> --body-file <file>`. Write the body file in the harness's scratch
+   or temp directory, never inside the repo; a multi-line `--body` argument
+   breaks on PowerShell quoting. Done:
    `gh pr view` shows the PR open against the right base with the new title
    and body.
 9. **Report** the PR URL to the user. When they also asked to babysit it,
