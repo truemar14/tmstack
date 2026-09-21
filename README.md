@@ -52,6 +52,7 @@ The installer does not set up:
 | `html-communication/` | Plans, specs, findings, and UI mock variants as one self-contained HTML page. A private Artifact by default, the file host when the link must open without a login or from Codex. |
 | `frontend-design/` | Guidance for the visual design of new or reshaped UI. |
 | `grilling/` | Interview the user in numbered rounds until every branch of a plan is settled. |
+| `catch-up/` | Answer "where were we?" in a session you lost track of: where it stopped, what is waiting on you, and the next step. Three fixed sentences in voice mode. Read only. |
 | `domain-modeling/` | Maintain a project's glossary (`CONTEXT.md`) and decision records (ADRs) while designing. |
 | `writing-for-agents/` | The rules for writing skills, `AGENTS.md` and any other document an agent reads. Every skill here follows them. |
 | `unslop/` | Cut AI tells from prose people read: PR descriptions, docs, pages, posts. |
