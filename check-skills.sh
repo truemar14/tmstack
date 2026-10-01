@@ -38,8 +38,9 @@ done
 
 if [[ -n ${PRIVATE_NAMES:-} ]]; then
   terms=$(printf '%s\n' "$PRIVATE_NAMES" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; /^$/d')
-  # Print file and line only: the matched text is private, and CI logs are public.
-  hits=$(git -C "$REPO" grep -n -i -w -F -I -f <(printf '%s\n' "$terms") | cut -d: -f1,2 || true)
+  # Print file and line only: the matched text is private, and CI logs are public. A UTF-8 locale
+  # makes -i fold case outside ASCII too, so a Cyrillic term matches in any case.
+  hits=$(LC_ALL=C.UTF-8 git -C "$REPO" grep -n -i -w -F -I -f <(printf '%s\n' "$terms") | cut -d: -f1,2 || true)
   [[ -z $hits ]] || problem "private names found at:"$'\n'"$hits"
 else
   echo "PRIVATE_NAMES not set: skipped the private-name check"
