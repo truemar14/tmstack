@@ -1,6 +1,6 @@
 {
   "name": "speak",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Reads Claude's replies aloud with a neural voice from Fish Audio or ElevenLabs. In voice mode every answer's Spoken paragraph is read; /speak reads the last reply, speaks text, or asks the model for a spoken summary. Playback controls (pause, back and forward 5 s, stop, replay) sit above the prompt. Needs function hooks (early access) and a terminal with speakers.",
   "author": { "name": "Mariyan Damyanov" },
   "license": "MIT",
