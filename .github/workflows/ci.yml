@@ -10,6 +10,9 @@ jobs:
           node-version: 22
       - run: npm test
         working-directory: speak-mod
+      # The typecheck needs declarations only an interactive /plugin-types writes, so CI validates
+      # the plugin instead: the manifest, the hooks file, and that every hook module parses.
+      - run: npx -y @anthropic-ai/claude-code plugin validate speak-mod
       - run: mkdir -p "$HOME/.claude" && ./install.sh --dry-run
         env:
           HOME: ${{ runner.temp }}/home
@@ -17,3 +20,12 @@ jobs:
         env:
           PRIVATE_NAMES: ${{ secrets.PRIVATE_NAMES }}
       - run: sudo apt-get install -y shellcheck && shellcheck install.sh check-skills.sh
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: New-Item -ItemType Directory -Force "$HOME\.claude" | Out-Null
+        shell: pwsh
+      # The README's own command line, so Windows PowerShell 5.1 parses the script as users run it.
+      - run: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -DryRun
+        shell: pwsh
