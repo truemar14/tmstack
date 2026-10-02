@@ -89,8 +89,10 @@ the mod writes at `~/.claude/speak-player[.cmd]`, and mirrors its state lines
 into the usual state file. The client fetches the clips with its own keys, read from
 its environment or secrets file (the launcher starts the player directly, so a
 key set under `/config` on the client is not seen), and plays them with its
-own media pausing; only text and progress cross the network. The client is found from `SSH_CONNECTION` (tmux keeps it current across
-re-attaches) and named through `tailscale whois`; `~/.ssh/config` on the box
+own media pausing; only text and progress cross the network. The client is the address in `SSH_CONNECTION` (tmux keeps it current across
+re-attaches) or, when that peer is offline (a Herdr server keeps the address of
+whoever started it), the live SSH login from `who` whose Tailscale peer is
+online. It is named through `tailscale whois`; `~/.ssh/config` on the box
 supplies the user (`Host <client hostname>` / `User <windows user>`).
 
 One-time per client: the mod installed there and one session started (that

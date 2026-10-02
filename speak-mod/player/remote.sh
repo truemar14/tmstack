@@ -8,9 +8,12 @@
 # and a few bytes of progress cross the network: the clips are fetched and played on the client,
 # with its keys, its media pausing and its speakers.
 #
-# Which client: the job's "remote" field when it names a host; else the address this SSH session
-# came from (tmux keeps SSH_CONNECTION current across re-attaches), turned into a Tailscale peer
-# name when tailscale is around. The SSH user and key come from ~/.ssh/config as usual.
+# Which client: the job's "remote" field when it names a host; else the SSH client of this session.
+# That is the address in SSH_CONNECTION (tmux keeps it current across re-attaches), but a process
+# under a long-lived server such as Herdr inherits the address of whoever started it, days ago and
+# maybe from another machine. So every live SSH login on the box (`who`) is a candidate too, and
+# with tailscale around the first candidate whose peer is online wins. The address is turned into a
+# Tailscale peer name; the SSH user and key come from ~/.ssh/config as usual.
 # Usage: bash remote.sh <base>.json   (linux.sh hands over here by itself; see its header)
 set -uo pipefail
 JOB=${1:?job file}
@@ -36,10 +39,26 @@ state() {   # state <phase> [message]: one state line the module understands, wr
 fail() { log "$1"; state error "$1"; sleep 5; rm -f "$STATE"; exit 1; }
 
 # --- which machine ---------------------------------------------------------------------------------
-client_ip() {
+client_ip() {   # the SSH client to play on (see the header), or nothing
   local conn=${SSH_CONNECTION:-}
   if [[ -n ${TMUX:-} ]]; then conn=$(tmux show-environment -g SSH_CONNECTION 2>/dev/null | cut -d= -f2-); fi
-  [[ -n $conn ]] && printf '%s' "${conn%% *}"
+  python3 - "${conn%% *}" <<'PY'
+import json, re, subprocess, sys
+cands = [sys.argv[1]] if sys.argv[1] else []
+try:   # who: "user tty date (100.1.2.3)", or "(login@100.1.2.3)" for Tailscale SSH
+    for line in subprocess.run(['who'], capture_output=True, text=True).stdout.splitlines():
+        m = re.search(r'\(([^()]*@)?([0-9a-fA-F.:]+)\)\s*$', line)
+        if m and m.group(2) not in cands: cands.append(m.group(2))
+except OSError:
+    pass
+try:   # keep the candidates whose Tailscale peer is online; none online, keep them all
+    st = json.loads(subprocess.run(['tailscale', 'status', '--json'], capture_output=True, text=True, timeout=5).stdout)
+    online = {ip for p in st.get('Peer', {}).values() if p.get('Online') for ip in p.get('TailscaleIPs', [])}
+    cands = [ip for ip in cands if ip in online] or cands
+except Exception:
+    pass
+print(cands[0] if cands else '')
+PY
 }
 target=$REMOTE
 if [[ $target == auto || -z $target ]]; then
