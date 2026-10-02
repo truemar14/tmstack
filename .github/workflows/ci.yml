@@ -13,4 +13,7 @@ jobs:
       - run: mkdir -p "$HOME/.claude" && ./install.sh --dry-run
         env:
           HOME: ${{ runner.temp }}/home
-      - run: sudo apt-get install -y shellcheck && shellcheck install.sh
+      - run: ./check-skills.sh
+        env:
+          PRIVATE_NAMES: ${{ secrets.PRIVATE_NAMES }}
+      - run: sudo apt-get install -y shellcheck && shellcheck install.sh check-skills.sh
