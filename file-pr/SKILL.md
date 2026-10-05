@@ -12,6 +12,9 @@ metadata:
 Filing stops at the first step whose done condition is out of reach. Report
 the blocker to the user with its output.
 
+The `gh` commands below need a signed-in `gh`. Where it is not signed in and
+the harness has GitHub tools, take the same step through those.
+
 ## Steps
 
 1. **Branch.** Work on the base branch moves to a branch named for the change
