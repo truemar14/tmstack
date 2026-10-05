@@ -24,7 +24,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - run: New-Item -ItemType Directory -Force "$HOME\.claude" | Out-Null
+      - run: New-Item -ItemType Directory -Force "$HOME\.claude", "$HOME\.codex" | Out-Null
         shell: pwsh
       # The README's own command line, so Windows PowerShell 5.1 parses the script as users run it.
       - run: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -DryRun
