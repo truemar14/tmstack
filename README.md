@@ -66,7 +66,7 @@ through file-upload when the link must open without a login. file-pr and
 babysit-pr use file-upload for screenshots. file-pr sketches a change as a
 file tree or call tree when that reads faster, and hands off to babysit-pr.
 file-pr and html-communication run their prose through unslop before it
-ships. review-loop leaves CI and review bots after a merge to babysit-pr.
+ships. review-loop holds each round to babysit-pr's done bar.
 
 grilling, domain-modeling, writing-for-agents and diagnosing-bugs are adapted
 from Matt Pocock's skills (1.2.3, MIT). unslop is adapted from

@@ -14,15 +14,16 @@ two steps in order.
 
 ## 1. Check it in the real target
 
-The **real target** is the thing the user will open: the built extension in
-the browser it ships for, the packaged app, the page at the URL they use.
+The **real target** is the closest non-production build of what the user
+will open: the built extension in the browser it ships for, the packaged app,
+the page in the browser and size they use.
 A unit test, a harness page or a dev build in another browser is evidence, not
 the check.
 
 - Rebuild and reload first, so the target runs the current code.
 - Exercise the exact behaviour that changed, and one neighbour it could break.
-- UI: look at it at desktop and phone width, in light and dark if the app has
-  both. Look at a screenshot of each, not only at logs.
+- UI: look at it at desktop width, at phone width when the UI has one, and in
+  light and dark if the app has both. Look at a screenshot of each, not only at logs.
 - Visual variants or mocks: open every one; a broken variant never reaches the
   user.
 
