@@ -60,7 +60,13 @@ When the user asks for variants:
   and components. A new surface with no design system to match follows the
   `frontend-design` skill. The document's own style stays outside the mocked
   interface.
+- A mock of an existing page changes only what the user asked to change; the
+  rest of the page, such as its header and footer, stays as the original.
 - Keep one file across iterations so its URL stays stable.
+- Before publishing, render the page at desktop and phone width and look at
+  every variant at both. Fix any variant that is broken, cut off, or built for
+  one width only. This check is required for mocks even where the Verify
+  section below is skipped; on a headless box use a headless browser.
 
 ## Publish
 
