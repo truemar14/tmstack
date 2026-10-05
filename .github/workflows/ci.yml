@@ -13,7 +13,7 @@ jobs:
       # The typecheck needs declarations only an interactive /plugin-types writes, so CI validates
       # the plugin instead: the manifest, the hooks file, and that every hook module parses.
       - run: npx -y @anthropic-ai/claude-code plugin validate speak-mod
-      - run: mkdir -p "$HOME/.claude" && ./install.sh --dry-run
+      - run: mkdir -p "$HOME/.claude" "$HOME/.codex" && ./install.sh --dry-run
         env:
           HOME: ${{ runner.temp }}/home
       - run: ./check-skills.sh

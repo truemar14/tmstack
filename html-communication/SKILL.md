@@ -70,10 +70,9 @@ without asking for permission first. An Artifact starts
 private, so the default venue exposes nothing; a user who wants to be asked
 before the file host route says so in their instructions.
 
-Artifact: write the file, call the Artifact tool on it (favicon on the first
-publish; load `artifact-design` first), report the URL. To update, call it
-again with the same file path, or with `url` for an Artifact from an earlier
-session.
+Artifact: write the file, publish it the way the Artifact tool's own
+instructions describe, and report the URL. For a document, `style.css` is the
+existing design system those instructions tell you to respect.
 
 File host: write the file, upload it with the `file-upload` skill, report the
 local path and the returned URL. To update, PUT to the filename from the
