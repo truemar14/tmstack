@@ -6,9 +6,9 @@ skill. The files inside are the skill's own scripts.
 
 The repo holds only the general skills. Personal instructions (`AGENTS.md`),
 machine inventories and anything that names a specific host live in a private
-repo with the same layout, installed next to this one. The installer links
-instruction files only from a checkout that has them, so both repos can run
-it.
+repo with the same layout, installed next to this one by this repo's
+installer. The installer links instruction files only from a checkout that
+has them, so it serves both repos.
 
 ## Install
 
@@ -30,6 +30,13 @@ present on the machine. Run it again after pulling. It re-points its own
 links, removes its links to skills that no longer exist, and never overwrites
 a real skill directory or a link it did not make. `install.ps1` does the same
 on Windows with junctions.
+
+Give either installer a path to install another repo with the same layout,
+such as a private one:
+
+```bash
+~/projects/tmstack/install.sh ~/projects/my-private-skills
+```
 
 The installer does not set up:
 

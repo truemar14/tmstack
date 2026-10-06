@@ -1,18 +1,23 @@
-# install.ps1 - Windows counterpart of install.sh: link this repo's skills and instructions into the
-# agent harnesses on this machine. Idempotent: run it after cloning and again after pulling.
+# install.ps1 - Windows counterpart of install.sh: link a skills repo's skills and instructions into the
+# agent harnesses on this machine. The repo is this checkout, or the directory given as -Repo (or the
+# first argument), so a private repo with the same layout needs no installer of its own.
+# Idempotent: run it after cloning and again after pulling.
 # Skill directories become junctions (no admin needed) in ~/.claude/skills and ~/.codex/skills for each
 # harness the skill lists (metadata.harness, default both) when metadata.platform allows win32 (default:
 # all). CLAUDE.md and AGENTS.md, when the checkout has them, become symlinks when the shell is elevated
-# or Developer Mode is on, and copies otherwise, refreshed on every run. Links into this repo
+# or Developer Mode is on, and copies otherwise, refreshed on every run. Links into the repo
 # are re-pointed and removed when their skill folder is gone; a link to anywhere else, or a real
 # directory in the way, is left alone and reported.
-# Usage: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 [-DryRun]
+# Usage: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 [-DryRun] [<repo>]
 [CmdletBinding()]
-param([switch]$DryRun)
-$repo = $PSScriptRoot
+param([Parameter(Position = 0)][string]$Repo, [switch]$DryRun)
+if (-not $Repo) { $Repo = $PSScriptRoot }
+if (-not (Test-Path -LiteralPath $Repo -PathType Container)) { Write-Error "no such directory: $Repo"; exit 2 }
+# $repo is $Repo (PowerShell names ignore case): the full path, without a trailing backslash.
+$repo = (Resolve-Path -LiteralPath $Repo).Path.TrimEnd('\')
 $harnesses = @(); foreach ($h in 'claude', 'codex') { if (Test-Path "$HOME\.$h") { $harnesses += $h } }
 if (-not $harnesses) { Write-Error 'no ~/.claude or ~/.codex here: install Claude Code or Codex first'; exit 1 }
-"platform win32, harnesses: $($harnesses -join ' ')$(if ($DryRun) { ' (dry run)' })"
+"${repo}: platform win32, harnesses: $($harnesses -join ' ')$(if ($DryRun) { ' (dry run)' })"
 
 # Field <SKILL.md> <key>: the values of "  key: [a, b]" (or "  key: a") inside the frontmatter, quotes
 # stripped; empty if absent
@@ -56,7 +61,7 @@ foreach ($skill in Get-ChildItem $repo -Directory | Where-Object { Test-Path "$(
   $skill.Name
   foreach ($h in $harnesses) { if (-not $want -or $want -contains $h) { Link $skill.FullName "$HOME\.$h\skills\$($skill.Name)" dir } }
 }
-# Links into this repo whose skill folder no longer exists are ours to remove.
+# Links into the repo whose skill folder no longer exists are ours to remove.
 foreach ($h in $harnesses) {
   foreach ($link in Get-ChildItem "$HOME\.$h\skills" -Force -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer -and ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) }) {
     $t = $link.Target -join ''
