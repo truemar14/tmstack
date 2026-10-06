@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
-# install.sh - link this repo's skills and instructions into the agent harnesses on this machine.
+# install.sh - link a skills repo's skills and instructions into the agent harnesses on this machine.
+# The repo is this checkout, or the directory given as an argument: a private repo with the same
+# layout is installed with this same script, so it carries no installer of its own.
 # Idempotent: run it after cloning and again after pulling. For every top-level directory with a
 # SKILL.md it reads the frontmatter's metadata.platform (default: all) and metadata.harness (default:
 # claude and codex) and symlinks the directory into ~/.claude/skills/<name> and ~/.codex/skills/<name>
 # for each listed harness that exists here (~/.claude or ~/.codex present). When the checkout has them,
 # it also links CLAUDE.md and AGENTS.md into ~/.claude, and AGENTS.md into ~/.codex, so a skills-only
 # repo and a private repo holding AGENTS.md install side by side.
-# Links into this repo are re-pointed and removed when their skill folder is gone; a symlink to anywhere
+# Links into the repo are re-pointed and removed when their skill folder is gone; a symlink to anywhere
 # else, or a real file or directory in the way, is left alone and reported.
-# Usage: ./install.sh [--dry-run]     (Linux and macOS; on Windows use install.ps1, since Git Bash
-# makes copies instead of symlinks unless Developer Mode is on)
+# Usage: ./install.sh [--dry-run] [<repo>]     (Linux and macOS; on Windows use install.ps1, since
+# Git Bash makes copies instead of symlinks unless Developer Mode is on)
 set -euo pipefail
-REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-case ${1:-} in '') DRY= ;; --dry-run) DRY=1 ;; *) echo "usage: $0 [--dry-run]" >&2; exit 2 ;; esac
+usage() { echo "usage: $0 [--dry-run] [<repo>]" >&2; exit 2; }
+DRY=; SRC=
+for a in "$@"; do
+  case $a in --dry-run) DRY=1 ;; -*) usage ;; *) [[ -z $SRC ]] || usage; SRC=$a ;; esac
+done
+[[ -z $SRC || -d $SRC ]] || { echo "no such directory: $SRC" >&2; exit 2; }
+REPO=$(cd "${SRC:-$(dirname "${BASH_SOURCE[0]}")}" && pwd)
 case $(uname -s) in Linux) PLATFORM=linux ;; Darwin) PLATFORM=darwin ;; *) echo "install.sh supports Linux and macOS; on Windows run install.ps1" >&2; exit 2 ;; esac
 
 # field <SKILL.md> <key>: the value of "  key: [a, b]" (or "  key: a") inside the frontmatter, as "a b",
@@ -35,7 +42,7 @@ link() {   # link <target> <path>
 
 harnesses=(); [[ -d ~/.claude ]] && harnesses+=(claude); [[ -d ~/.codex ]] && harnesses+=(codex)
 if ((${#harnesses[@]} == 0)); then echo "no ~/.claude or ~/.codex here: install Claude Code or Codex first" >&2; exit 1; fi
-echo "platform $PLATFORM, harnesses: ${harnesses[*]}${DRY:+ (dry run)}"
+echo "$REPO: platform $PLATFORM, harnesses: ${harnesses[*]}${DRY:+ (dry run)}"
 
 [[ -f $REPO/AGENTS.md ]] && for h in "${harnesses[@]}"; do
   echo "instructions -> ~/.$h"
@@ -54,7 +61,7 @@ for skill in "$REPO"/*/SKILL.md; do
   done
 done
 
-# Links into this repo whose skill folder no longer exists are ours to remove.
+# Links into the repo whose skill folder no longer exists are ours to remove.
 for h in "${harnesses[@]}"; do
   for l in ~/."$h"/skills/*; do
     [[ -L $l ]] || continue; t=$(readlink "$l")

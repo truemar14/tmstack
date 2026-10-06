@@ -16,6 +16,15 @@ jobs:
       - run: mkdir -p "$HOME/.claude" "$HOME/.codex" && ./install.sh --dry-run
         env:
           HOME: ${{ runner.temp }}/home
+      # A second repo with the same layout, installed by path, the way the private repo is.
+      - run: |
+          mkdir -p "$RUNNER_TEMP/other/demo"
+          printf -- '---\nname: demo\ndescription: test\n---\n' > "$RUNNER_TEMP/other/demo/SKILL.md"
+          touch "$RUNNER_TEMP/other/AGENTS.md"
+          ./install.sh --dry-run "$RUNNER_TEMP/other" | tee "$RUNNER_TEMP/out"
+          grep -q 'skills/demo' "$RUNNER_TEMP/out" && grep -q 'codex/AGENTS.md' "$RUNNER_TEMP/out"
+        env:
+          HOME: ${{ runner.temp }}/home
       - run: ./check-skills.sh
         env:
           PRIVATE_NAMES: ${{ secrets.PRIVATE_NAMES }}
@@ -28,4 +37,12 @@ jobs:
         shell: pwsh
       # The README's own command line, so Windows PowerShell 5.1 parses the script as users run it.
       - run: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -DryRun
+        shell: pwsh
+      - run: |
+          New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\other\demo" | Out-Null
+          Set-Content "$env:RUNNER_TEMP\other\demo\SKILL.md" "---`nname: demo`ndescription: test`n---"
+          New-Item -ItemType File -Force "$env:RUNNER_TEMP\other\AGENTS.md" | Out-Null
+          $out = powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 "$env:RUNNER_TEMP\other" -DryRun | Out-String
+          $out
+          if ($out -notmatch 'skills\\demo' -or $out -notmatch 'codex\\AGENTS.md') { exit 1 }
         shell: pwsh
