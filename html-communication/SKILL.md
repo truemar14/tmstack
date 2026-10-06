@@ -5,7 +5,7 @@ metadata:
   harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
-  requires: "the Artifact tool (Claude Code); curl, FILE_HOST_URL and FILE_HOST_TOKEN in the environment (file-upload skill) for the file host case"
+  requires: "the Artifact tool (Claude Code); curl, FILE_HOST_URL and FILE_HOST_TOKEN in the environment (file-upload skill) for the file host case; a browser (browser tools or headless Playwright) for the mock check"
 ---
 
 # HTML Communication
@@ -60,7 +60,13 @@ When the user asks for variants:
   and components. A new surface with no design system to match follows the
   `frontend-design` skill. The document's own style stays outside the mocked
   interface.
+- A mock of an existing page changes only what the user asked to change; the
+  rest of the page, such as its header and footer, stays as the original.
 - Keep one file across iterations so its URL stays stable.
+- Before publishing, render the page at desktop and phone width and look at
+  every variant at both. Fix any variant that is broken, cut off, or built for
+  one width only. On a headless box use a headless browser. With no browser
+  at all, publish and say the mocks are unchecked.
 
 ## Publish
 
@@ -82,6 +88,7 @@ before the upload succeeds.
 
 ## Verify
 
-Verification is separate from publishing and optional. Where browser tools are
+For documents, verification is separate from publishing and optional; mocks
+take the required check above. Where browser tools are
 available, open the URL, check it at desktop and phone widths, and fix what is
 wrong before reporting. Skip it on a headless box.
