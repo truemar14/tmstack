@@ -7,6 +7,10 @@ shelled out around it. Codex has no function hooks and no voice mode.
 - In voice mode (`/voice`, or `/speak on`) every reply's final `Spoken:`
   paragraph is read; the model is asked for that paragraph as hidden context
   beside each prompt, so nothing shows in the transcript.
+- In the Claude desktop app, a turn that ends with the app's recap box is read
+  from that box instead: its recap, then its question. The model is told so,
+  and writes no `Spoken:` paragraph then. A turn without the box still ends
+  with one. The band below draws there too; `/speak` is terminal only.
 - `/speak` reads the last reply, `/speak say <text>` speaks a text,
   `/speak <request>` asks the model and reads the answer (`/speak summarize
   that in two sentences`), `/speak stop | pause | resume | back | forward |
@@ -30,7 +34,7 @@ shelled out around it. Codex has no function hooks and no voice mode.
 | Path | Role |
 |---|---|
 | `.claude-plugin/plugin.json` | Manifest and `userConfig` (engine; per-engine API key in secure storage, voice and model; speed, focus gate, media pause). |
-| `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `turn.complete`, `command.run` for `/speak`, `ui.render` for the band. |
+| `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `tool.call` for the desktop recap, `turn.complete`, `command.run` for `/speak`, `ui.render` for the band. |
 | `hooks/speakable.ts` | Markdown to spoken text, the `Spoken:` extraction, clip splitting. |
 | `hooks/args.ts` | `/speak` argument parsing. |
 | `hooks/protocol.ts` | The file protocol with the player and the pure helpers around it. |
@@ -39,7 +43,8 @@ shelled out around it. Codex has no function hooks and no voice mode.
 | `player/linux.sh` | Linux player: same protocol over mpv's IPC socket (needs curl, python3, mpv). Hands over to `remote.sh` when the session came in over SSH. |
 | `player/remote.sh` | Drives the SSH client's own player in stdio mode and mirrors its state, so a box without speakers plays through the machine you sit at. |
 | `player/authorize-client.ps1` | One-time, elevated: authorizes a box's SSH key on this Windows machine so it can play here. |
-| `tests/` | Pure-logic tests: `node --test "tests/*.test.ts"` (Node 22.18 or newer strips the types itself). |
+| `tests/*.spec.ts` | Pure-logic tests: `npm test` (Node 22.18 or newer strips the types itself). |
+| `tests/engine/` | Hook tests against the engine: `claude plugin test speak-mod` (Claude Code 2.1.295 or newer): the desktop recap path and the band on both surfaces. |
 
 ## How it works
 

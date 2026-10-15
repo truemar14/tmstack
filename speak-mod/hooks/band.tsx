@@ -30,7 +30,8 @@ function statusOf(job: Job): string {
   }
 }
 
-export function bandTree(el: Elements['terminal'], job: Job, columns: number, on: BandActions): RenderElement {
+// Drawn on the terminal and in the desktop app, with only the elements both tables have.
+export function bandTree(el: Pick<Elements['terminal'] & Elements['desktop'], 'Box' | 'Text' | 'Button'>, job: Job, columns: number, on: BandActions): RenderElement {
   const { Box, Text, Button } = el
   const { phase, paused, fraction } = job.state
   const live = phase === 'playing' || phase === 'fetching' || phase === 'held' || phase === 'starting'
