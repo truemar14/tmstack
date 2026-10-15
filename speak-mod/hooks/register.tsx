@@ -4,7 +4,7 @@
 // In voice mode (Claude Code's own /voice switch, or `/speak on`) every answer's final "Spoken:"
 // paragraph is read aloud; the prompt hook asks the model for that paragraph as hidden context.
 // /speak reads the last reply, speaks a text, or asks the model for something spoken. A band above
-// the prompt shows progress with pause, back and forward 5 s, stop and replay.
+// the prompt shows progress with pause, back 5 s, stop and replay.
 //
 // Playback itself runs in a detached player process per reply (player/win.ps1, player/linux.sh):
 // it fetches the clips from the configured engine, takes turns with other sessions, waits for its session to
@@ -332,7 +332,7 @@ export const register: Register = (on, options) => {
       void sendCommand($, base, word)
     }
     const actions = {
-      pause: send('pause'), resume: send('resume'), back: send('back'), forward: send('fwd'), replay: send('replay'),
+      pause: send('pause'), resume: send('resume'), back: send('back'), replay: send('replay'),
       stop: () => { void stop($) },
       close: () => { void stop($) },
     }

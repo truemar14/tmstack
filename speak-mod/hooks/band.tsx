@@ -8,7 +8,6 @@ export type BandActions = {
   pause: () => void
   resume: () => void
   back: () => void
-  forward: () => void
   stop: () => void
   replay: () => void
   close: () => void
@@ -36,12 +35,11 @@ export function bandTree(el: Elements['terminal'], job: Job, columns: number, on
   const { phase, paused, fraction } = job.state
   const live = phase === 'playing' || phase === 'fetching' || phase === 'held' || phase === 'starting'
   const status = statusOf(job)
-  // Controls: back, pause/resume, forward, stop while live; replay and close once read.
+  // Controls: back, pause/resume, stop while live; replay and close once read.
   const controls = live
     ? [
         <Button key="speak:back" label="« 5" dimColor onPress={on.back} />,
         <Button key="speak:toggle" label={paused ? 'resume' : 'pause'} onPress={paused ? on.resume : on.pause} />,
-        <Button key="speak:fwd" label="5 »" dimColor onPress={on.forward} />,
         <Button key="speak:stop" label="stop" onPress={on.stop} />,
       ]
     : phase === 'done'
@@ -72,8 +70,7 @@ export function bandTree(el: Elements['terminal'], job: Job, columns: number, on
 // The desktop app's band (variant A of the desktop mocks): a sound mark, what is happening, a slim
 // progress bar and the app's own buttons, on one row that wraps in a narrow window. Every button is
 // plain, so the row is one line of text high: the frame around it (fill, corners, padding) is the
-// app's own and no prop reaches it. Resume stands out by its clay label instead. Skipping ahead is
-// left to the terminal band; here only Back 5s is offered. The two Svgs are
+// app's own and no prop reaches it. Resume stands out by its clay label instead. The two Svgs are
 // images, which cannot read the app's theme, so their colors are ones that read on both.
 const CLAY = '#d97757'
 const QUIET = 'rgba(128,128,128,0.55)'

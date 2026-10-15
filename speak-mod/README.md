@@ -22,7 +22,7 @@ shelled out around it. Codex has no function hooks and no voice mode.
   gives 10,000 credits a month free (roughly 40 to 100 spoken summaries with
   the Flash model) and a commercial licence from the $6 Starter plan.
 - A band above the prompt shows what is being read with a progress line and
-  buttons: back and forward 5 s, pause, stop; after the reply, replay (kept
+  buttons: back 5 s, pause, stop; after the reply, replay (kept
   20 minutes) and close.
 - A new prompt stops this session's reading. Inside [Herdr](https://herdr.dev),
   a terminal workspace for agent sessions, a reply from a session that is not

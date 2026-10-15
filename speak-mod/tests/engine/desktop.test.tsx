@@ -61,6 +61,7 @@ test('the band draws its controls on the terminal and in the desktop app', async
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'speak', surface, component: 'AbovePrompt', props: BAND })
     expect(await ui.find({ key: 'speak:stop' })).toBeDefined()
+    expect(await ui.find({ key: 'speak:fwd' })).toBeUndefined()
   }
 })
 
