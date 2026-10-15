@@ -4,8 +4,9 @@
 # Idempotent: run it after cloning and again after pulling.
 # Skill directories become junctions (no admin needed) in ~/.claude/skills and ~/.codex/skills for each
 # harness the skill lists (metadata.harness, default both) when metadata.platform allows win32 (default:
-# all). CLAUDE.md and AGENTS.md, when the checkout has them, become symlinks when the shell is elevated
-# or Developer Mode is on, and copies otherwise, refreshed on every run. Links into the repo
+# all). CLAUDE.md (or AGENTS.md when there is no CLAUDE.md) goes into ~/.claude and AGENTS.md into
+# ~/.codex, when the checkout has them: symlinks when the shell is elevated or Developer Mode is on, and
+# copies otherwise, refreshed on every run. Links into the repo
 # are re-pointed and removed when their skill folder is gone; a link to anywhere else, or a real
 # directory in the way, is left alone and reported.
 # Usage: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 [-DryRun] [<repo>]
@@ -49,11 +50,24 @@ function Link($target, $path, $kind) {   # kind: dir (junction) or file (symlink
 
 # Instruction files are linked only when this checkout has them, so a skills-only repo and a private
 # repo holding AGENTS.md can be installed side by side.
+# Claude gets CLAUDE.md alone when the repo has one and it is a symlink: it imports AGENTS.md through
+# the link's real path, and Claude Code also loads ~/.claude/AGENTS.md in projects without a CLAUDE.md,
+# so a link there would load the same file twice. A copied CLAUDE.md imports the AGENTS.md beside it,
+# so that one gets a copy too; both name the same path, so it still loads once.
 foreach ($h in $harnesses) {
   if (-not (Test-Path "$repo\AGENTS.md")) { continue }
   "instructions -> ~/.$h"
+  if ($h -eq 'claude' -and (Test-Path "$repo\CLAUDE.md")) {
+    Link "$repo\CLAUDE.md" "$HOME\.claude\CLAUDE.md" file
+    $claude = Get-Item "$HOME\.claude\CLAUDE.md" -Force -ErrorAction SilentlyContinue
+    if (-not ($claude -and ($claude.Attributes -band [IO.FileAttributes]::ReparsePoint))) { Link "$repo\AGENTS.md" "$HOME\.claude\AGENTS.md" file; continue }
+    $old = Get-Item "$HOME\.claude\AGENTS.md" -Force -ErrorAction SilentlyContinue
+    if ($old -and ($old.Attributes -band [IO.FileAttributes]::ReparsePoint) -and ($old.Target -join '').StartsWith("$repo\", [StringComparison]::OrdinalIgnoreCase)) {
+      "  remove $($old.FullName) (CLAUDE.md imports it)"; if (-not $DryRun) { [IO.File]::Delete($old.FullName) }
+    }
+    continue
+  }
   Link "$repo\AGENTS.md" "$HOME\.$h\AGENTS.md" file
-  if ($h -eq 'claude' -and (Test-Path "$repo\CLAUDE.md")) { Link "$repo\CLAUDE.md" "$HOME\.claude\CLAUDE.md" file }
 }
 foreach ($skill in Get-ChildItem $repo -Directory | Where-Object { Test-Path "$($_.FullName)\SKILL.md" }) {
   $md = "$($skill.FullName)\SKILL.md"; $platforms = @(Field $md platform); $want = @(Field $md harness)

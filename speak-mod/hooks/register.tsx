@@ -4,7 +4,7 @@
 // In voice mode (Claude Code's own /voice switch, or `/speak on`) every answer's final "Spoken:"
 // paragraph is read aloud; the prompt hook asks the model for that paragraph as hidden context.
 // /speak reads the last reply, speaks a text, or asks the model for something spoken. A band above
-// the prompt shows progress with pause, back and forward 5 s, stop and replay.
+// the prompt shows progress with pause, back 5 s, stop and replay.
 //
 // Playback itself runs in a detached player process per reply (player/win.ps1, player/linux.sh):
 // it fetches the clips from the configured engine, takes turns with other sessions, waits for its session to
@@ -15,7 +15,7 @@
 // state is module-level and every helper that takes `$` is a top-level const.
 import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 import { HELP, parseArgs } from './args.ts'
-import { bandTree } from './band.tsx'
+import { bandTree, desktopBandTree } from './band.tsx'
 import {
   ENGINES, isEngine, OVER, parseState, pluginRoot, spawnArgv, starting, tempDirOf,
   type Engine, type Job, type JobSpec, type Platform, type PlayerCommand, type PlayerState,
@@ -24,6 +24,14 @@ import { spokenOf, splitChunks, toSpeakable } from './speakable.ts'
 
 // What the prompt hook tells the model in voice mode (hidden context beside the prompt).
 const VOICE_INSTRUCTION = 'Voice mode is on. The user is listening, not reading: only a spoken summary of your reply is read aloud by TTS. Unless the whole reply is already one or two plain sentences, end it with a final paragraph that starts with "Spoken:" followed by one to three short, plain sentences saying what matters (what you found, what you did, what is next) as if talking to the user; no markdown, code, paths or lists in it. Everything before that line is shown on screen only.'
+
+// The desktop app's variant: its turns end with a wrap_up box, whose recap and question are read
+// instead of a "Spoken:" paragraph, so the model does not write the same summary twice.
+const DESKTOP_VOICE_INSTRUCTION = 'Voice mode is on. The user is listening, not reading. When the turn ends with the wrap_up tool, its recap and its question (ask) are what is read aloud by TTS: write them to be heard, in short plain sentences with no markdown, code, paths or lists, put any question for the user in ask, and add no "Spoken:" paragraph. When a turn ends without wrap_up, end the reply with a final paragraph that starts with "Spoken:" followed by one to three short, plain sentences saying what matters, written the same way; only that paragraph is read. Everything else is shown on screen only.'
+
+// The desktop app's end-of-turn tool: the recap and question a main-loop call carries are captured
+// as it runs and read by turn.complete in place of the reply's "Spoken:" paragraph.
+const RECAP_TOOL = 'mcp__ccd_turn__wrap_up'
 
 const COMPOSE_SUFFIX = '\n\nAnswer in plain spoken prose only, one to three short sentences unless asked for more: no markdown, code, paths or lists. It will be read aloud, not shown.'
 
@@ -41,6 +49,8 @@ let poll: { cancel: () => void } | undefined
 let expiry: { cancel: () => void } | undefined
 // set by `/speak <request>`: read the next answer even when voice mode is off
 let speakNext = false
+// this turn's wrap_up recap and question, when it called RECAP_TOOL
+let recap: string | undefined
 
 const str = (key: string, fallback: string) => (typeof opts[key] === 'string' ? (opts[key] as string) : fallback)
 const num = (key: string, fallback: number) => (typeof opts[key] === 'number' ? (opts[key] as number) : fallback)
@@ -220,22 +230,37 @@ export const register: Register = (on, options) => {
     return r
   })
 
-  // A new prompt interrupts this session's reading; in voice mode the model is asked for the
-  // "Spoken:" paragraph as context it reads beside the prompt, never shown in the transcript.
+  // A new prompt interrupts this session's reading; in voice mode the model is told what will be
+  // read (the "Spoken:" paragraph, or in the desktop app the wrap_up recap) as context it reads
+  // beside the prompt, never shown in the transcript.
   on('prompt.submit', async ($, e, next) => {
     await stop($)
+    recap = undefined
     if (e.origin?.kind === 'plugin' || !(await voiceOn($))) return next(e)
-    return next({ ...e, context: [...(e.context ?? []), VOICE_INSTRUCTION] })
+    const desktop = (await $.session.surfaces()).includes('desktop')
+    return next({ ...e, context: [...(e.context ?? []), desktop ? DESKTOP_VOICE_INSTRUCTION : VOICE_INSTRUCTION] })
+  })
+
+  on('tool.call', { tool: RECAP_TOOL }, async ($, e, next) => {
+    if (!e.agentId) {
+      const { recap: said, ask } = e as { recap?: unknown; ask?: unknown }
+      const parts = [said, ask].filter((p): p is string => typeof p === 'string' && p.trim() !== '')
+      if (parts.length) recap = parts.join('\n')
+    }
+    return next(e)
   })
 
   on('turn.complete', async ($, e, next) => {
     const r = await next(e)
-    if (e.agentId || e.reason !== 'answer' || !e.answer.trim()) return r
+    const said = recap
+    recap = undefined
+    // a wrap_up whose question ends the turn leaves no text after it, so an empty answer counts then
+    if (e.agentId || e.reason !== 'answer' || (!e.answer.trim() && !said)) return r
     const compose = speakNext
     speakNext = false
     if (!compose && !(await voiceOn($))) return r
     const speakable = toSpeakable(e.answer)
-    const text = compose ? speakable : spokenOf(speakable)
+    const text = compose ? speakable : said ? toSpeakable(said) : spokenOf(speakable)
     if (!text) return r // "Spoken:" with nothing after it: the reply chose silence
     const problem = await speak($, text, true)
     if (problem) $.ui.toast(problem, { timeoutMs: 8000 })
@@ -298,8 +323,7 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (!job || e.surface !== 'terminal' || e.props.hasSurvey) return next(e)
-    const el = $.ui.resolve(e)
+    if (!job || (e.surface !== 'terminal' && e.surface !== 'desktop') || e.props.hasSurvey) return next(e)
     const base = job.base
     const send = (word: PlayerCommand) => () => {
       if (job?.base !== base) return
@@ -307,12 +331,14 @@ export const register: Register = (on, options) => {
       if (word === 'pause' || word === 'resume') { job.state = { ...job.state, paused: word === 'pause' }; $.ui.invalidate('ui.render') }
       void sendCommand($, base, word)
     }
-    // The band is this plugin's whole tree: the engine draws nothing of its own here, and
-    // wrapping its empty result in a column box cost a blank row under the band.
-    return bandTree(el, job, e.props.bodyColumns, {
-      pause: send('pause'), resume: send('resume'), back: send('back'), forward: send('fwd'), replay: send('replay'),
+    const actions = {
+      pause: send('pause'), resume: send('resume'), back: send('back'), replay: send('replay'),
       stop: () => { void stop($) },
       close: () => { void stop($) },
-    })
+    }
+    // The band is this plugin's whole tree: the engine draws nothing of its own here, and
+    // wrapping its empty result in a column box cost a blank row under the band.
+    if (e.surface === 'desktop') return desktopBandTree($.ui.resolve(e), job, actions)
+    return bandTree($.ui.resolve(e), job, e.props.bodyColumns, actions)
   })
 }
