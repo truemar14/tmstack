@@ -70,8 +70,10 @@ export function bandTree(el: Elements['terminal'], job: Job, columns: number, on
 }
 
 // The desktop app's band (variant A of the desktop mocks): a sound mark, what is happening, a slim
-// progress bar and the app's own buttons, on one row that wraps in a narrow window. The two Svgs
-// are images, which cannot read the app's theme, so their colors are ones that read on both.
+// progress bar and the app's own buttons, on one row that wraps in a narrow window. Every button is
+// plain, so the row is one line of text high: the frame around it (fill, corners, padding) is the
+// app's own and no prop reaches it. Resume stands out by its clay label instead. The two Svgs are
+// images, which cannot read the app's theme, so their colors are ones that read on both.
 const CLAY = '#d97757'
 const QUIET = 'rgba(128,128,128,0.55)'
 const TRACK = 'rgba(128,128,128,0.3)'
@@ -121,8 +123,8 @@ export function desktopBandTree(el: Elements['desktop'], job: Job, on: BandActio
         </Box>
         <Button key="speak:back" label="Back 5s" plain onPress={on.back} />
         {paused
-          ? <Button key="speak:toggle" label="Resume" variant="primary" onPress={on.resume} />
-          : <Button key="speak:toggle" label="Pause" onPress={on.pause} />}
+          ? <Button key="speak:toggle" plain onPress={on.resume}><Text bold color={CLAY}>Resume</Text></Button>
+          : <Button key="speak:toggle" label="Pause" plain onPress={on.pause} />}
         <Button key="speak:fwd" label="Skip 5s" plain onPress={on.forward} />
         <Button key="speak:stop" label="Stop" role="dismiss" onPress={on.stop} />
       </Box>
@@ -133,7 +135,7 @@ export function desktopBandTree(el: Elements['desktop'], job: Job, on: BandActio
       {phase === 'error' ? null : mark}
       <Text color={phase === 'error' ? 'error' : undefined} dimColor={phase !== 'error'}>{status}</Text>
       <Box flexGrow={1} />
-      {phase === 'done' ? <Button key="speak:replay" label="Replay" onPress={on.replay} /> : null}
+      {phase === 'done' ? <Button key="speak:replay" label="Replay" plain onPress={on.replay} /> : null}
       <Button key="speak:close" label="Close" role="dismiss" onPress={on.close} />
     </Box>
   )

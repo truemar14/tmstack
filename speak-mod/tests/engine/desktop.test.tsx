@@ -77,8 +77,8 @@ test('desktop: the band reads like the app, from speaking through paused to read
 
   await ui.press({ key: 'speak:toggle' })
   const resume = await ui.find({ key: 'speak:toggle' })
-  expect(resume?.props.label).toBe('Resume')
-  expect(resume?.props.variant).toBe('primary')
+  expect(resume?.text).toBe('Resume')
+  expect(resume?.props.plain).toBe(true)
 
   player.state = JSON.stringify({ phase: 'done', chunk: 1, n: 2, fraction: 1, paused: false })
   await clock.advance(300)
