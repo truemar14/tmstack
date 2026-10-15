@@ -30,8 +30,8 @@ function statusOf(job: Job): string {
   }
 }
 
-// Drawn on the terminal and in the desktop app, with only the elements both tables have.
-export function bandTree(el: Pick<Elements['terminal'] & Elements['desktop'], 'Box' | 'Text' | 'Button'>, job: Job, columns: number, on: BandActions): RenderElement {
+// The terminal's band: text marks sized to the terminal's columns.
+export function bandTree(el: Elements['terminal'], job: Job, columns: number, on: BandActions): RenderElement {
   const { Box, Text, Button } = el
   const { phase, paused, fraction } = job.state
   const live = phase === 'playing' || phase === 'fetching' || phase === 'held' || phase === 'starting'
@@ -65,6 +65,76 @@ export function bandTree(el: Pick<Elements['terminal'] & Elements['desktop'], 'B
         <Text dimColor>{'─'.repeat(width - filled)}</Text>
       </Text>
       {controls}
+    </Box>
+  )
+}
+
+// The desktop app's band (variant A of the desktop mocks): a sound mark, what is happening, a slim
+// progress bar and the app's own buttons, on one row that wraps in a narrow window. The two Svgs
+// are images, which cannot read the app's theme, so their colors are ones that read on both.
+const CLAY = '#d97757'
+const QUIET = 'rgba(128,128,128,0.55)'
+const TRACK = 'rgba(128,128,128,0.3)'
+
+// Five bars of a sound mark: clay while speaking, grey otherwise.
+const markSvg = (color: string) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="16" viewBox="0 0 18 16">${
+    [6, 11, 16, 11, 6].map((h, i) => `<rect x="${i * 4}" y="${(16 - h) / 2}" width="2.5" height="${h}" rx="1.25" fill="${color}"/>`).join('')
+  }</svg>`
+
+// A 4 px bar filled to `fraction`; it stretches to the width it is given.
+const progressSvg = (fraction: number) => {
+  const pct = Math.round(Math.max(0, Math.min(1, fraction)) * 1000) / 10
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="4" viewBox="0 0 100 4" preserveAspectRatio="none"><rect width="100" height="4" rx="2" fill="${TRACK}"/><rect width="${pct}" height="4" rx="2" fill="${CLAY}"/></svg>`
+}
+
+// What the desktop band says for each phase.
+function desktopStatus(job: Job): string {
+  const { phase, paused, message } = job.state
+  switch (phase) {
+    case 'starting': return 'Starting voice'
+    case 'held': return 'Waiting for this session to be in front'
+    case 'fetching': return 'Fetching voice'
+    case 'playing': return paused ? 'Paused' : 'Reading aloud'
+    case 'done': return 'Read aloud'
+    case 'stopped': return 'Stopped'
+    case 'expired': return 'Expired'
+    case 'error': return `Voice failed: ${message ?? 'unknown error'}`
+  }
+}
+
+export function desktopBandTree(el: Elements['desktop'], job: Job, on: BandActions): RenderElement {
+  const { Box, Text, Button, Svg } = el
+  const { phase, paused, fraction, chunk, n } = job.state
+  const live = phase === 'playing' || phase === 'fetching' || phase === 'held' || phase === 'starting'
+  const speaking = phase === 'playing' && !paused
+  const status = desktopStatus(job)
+  const mark = <Svg key="speak:mark" source={markSvg(speaking ? CLAY : QUIET)} alt={status} width={18} height={16} />
+  if (live) {
+    return (
+      <Box flexDirection="row" alignItems="center" columnGap={1} flexWrap="wrap">
+        {mark}
+        <Text bold>{status}</Text>
+        {n > 1 ? <Text dimColor>{`${Math.min(chunk + 1, n)} of ${n}`}</Text> : null}
+        <Box flexGrow={1} minWidth={40}>
+          <Svg key="speak:progress" source={progressSvg(fraction)} alt={`${Math.round(fraction * 100)}% read`} height={4} />
+        </Box>
+        <Button key="speak:back" label="Back 5s" plain onPress={on.back} />
+        {paused
+          ? <Button key="speak:toggle" label="Resume" variant="primary" onPress={on.resume} />
+          : <Button key="speak:toggle" label="Pause" onPress={on.pause} />}
+        <Button key="speak:fwd" label="Skip 5s" plain onPress={on.forward} />
+        <Button key="speak:stop" label="Stop" role="dismiss" onPress={on.stop} />
+      </Box>
+    )
+  }
+  return (
+    <Box flexDirection="row" alignItems="center" columnGap={1}>
+      {phase === 'error' ? null : mark}
+      <Text color={phase === 'error' ? 'error' : undefined} dimColor={phase !== 'error'}>{status}</Text>
+      <Box flexGrow={1} />
+      {phase === 'done' ? <Button key="speak:replay" label="Replay" onPress={on.replay} /> : null}
+      <Button key="speak:close" label="Close" role="dismiss" onPress={on.close} />
     </Box>
   )
 }

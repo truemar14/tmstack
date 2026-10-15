@@ -15,7 +15,7 @@
 // state is module-level and every helper that takes `$` is a top-level const.
 import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 import { HELP, parseArgs } from './args.ts'
-import { bandTree } from './band.tsx'
+import { bandTree, desktopBandTree } from './band.tsx'
 import {
   ENGINES, isEngine, OVER, parseState, pluginRoot, spawnArgv, starting, tempDirOf,
   type Engine, type Job, type JobSpec, type Platform, type PlayerCommand, type PlayerState,
@@ -324,7 +324,6 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (!job || (e.surface !== 'terminal' && e.surface !== 'desktop') || e.props.hasSurvey) return next(e)
-    const el = $.ui.resolve(e)
     const base = job.base
     const send = (word: PlayerCommand) => () => {
       if (job?.base !== base) return
@@ -332,12 +331,14 @@ export const register: Register = (on, options) => {
       if (word === 'pause' || word === 'resume') { job.state = { ...job.state, paused: word === 'pause' }; $.ui.invalidate('ui.render') }
       void sendCommand($, base, word)
     }
-    // The band is this plugin's whole tree: the engine draws nothing of its own here, and
-    // wrapping its empty result in a column box cost a blank row under the band.
-    return bandTree(el, job, e.props.bodyColumns, {
+    const actions = {
       pause: send('pause'), resume: send('resume'), back: send('back'), forward: send('fwd'), replay: send('replay'),
       stop: () => { void stop($) },
       close: () => { void stop($) },
-    })
+    }
+    // The band is this plugin's whole tree: the engine draws nothing of its own here, and
+    // wrapping its empty result in a column box cost a blank row under the band.
+    if (e.surface === 'desktop') return desktopBandTree($.ui.resolve(e), job, actions)
+    return bandTree($.ui.resolve(e), job, e.props.bodyColumns, actions)
   })
 }
