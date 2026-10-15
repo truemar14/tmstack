@@ -6,8 +6,8 @@
 # SKILL.md it reads the frontmatter's metadata.platform (default: all) and metadata.harness (default:
 # claude and codex) and symlinks the directory into ~/.claude/skills/<name> and ~/.codex/skills/<name>
 # for each listed harness that exists here (~/.claude or ~/.codex present). When the checkout has them,
-# it also links CLAUDE.md and AGENTS.md into ~/.claude, and AGENTS.md into ~/.codex, so a skills-only
-# repo and a private repo holding AGENTS.md install side by side.
+# it also links CLAUDE.md (or AGENTS.md when there is no CLAUDE.md) into ~/.claude, and AGENTS.md into
+# ~/.codex, so a skills-only repo and a private repo holding AGENTS.md install side by side.
 # Links into the repo are re-pointed and removed when their skill folder is gone; a symlink to anywhere
 # else, or a real file or directory in the way, is left alone and reported.
 # Usage: ./install.sh [--dry-run] [<repo>]     (Linux and macOS; on Windows use install.ps1, since
@@ -44,10 +44,19 @@ harnesses=(); [[ -d ~/.claude ]] && harnesses+=(claude); [[ -d ~/.codex ]] && ha
 if ((${#harnesses[@]} == 0)); then echo "no ~/.claude or ~/.codex here: install Claude Code or Codex first" >&2; exit 1; fi
 echo "$REPO: platform $PLATFORM, harnesses: ${harnesses[*]}${DRY:+ (dry run)}"
 
+# Claude gets CLAUDE.md alone when the repo has one: it imports AGENTS.md through the link's real
+# path, and Claude Code also loads ~/.claude/AGENTS.md in projects without a CLAUDE.md, so a link
+# there would load the same file twice. An earlier run's link there is removed.
 [[ -f $REPO/AGENTS.md ]] && for h in "${harnesses[@]}"; do
   echo "instructions -> ~/.$h"
-  link "$REPO/AGENTS.md" ~/."$h"/AGENTS.md
-  [[ $h == claude && -f $REPO/CLAUDE.md ]] && link "$REPO/CLAUDE.md" ~/.claude/CLAUDE.md
+  if [[ $h == claude && -f $REPO/CLAUDE.md ]]; then
+    link "$REPO/CLAUDE.md" ~/.claude/CLAUDE.md
+    if [[ -L ~/.claude/AGENTS.md && $(readlink ~/.claude/AGENTS.md) == "$REPO"/* ]]; then
+      echo "  remove $HOME/.claude/AGENTS.md (CLAUDE.md imports it)"; [[ -n $DRY ]] || rm ~/.claude/AGENTS.md
+    fi
+  else
+    link "$REPO/AGENTS.md" ~/."$h"/AGENTS.md
+  fi
 done
 
 for skill in "$REPO"/*/SKILL.md; do

@@ -13,9 +13,11 @@ First find out what review automation this repo actually has: look at the
 checks and the comment authors on a few recently merged PRs. Bots may report
 through checks, reviews, or plain comments, and some repos have none.
 
-If your harness offers a way to wait on a PR or poll on an interval, use it so
-you can respond when comments arrive. Otherwise, poll the PR for new comments
-and checks yourself.
+When the harness watches PRs itself, such as the Claude desktop app's PR
+monitor with Auto-fix, turn that on and let it wake you on CI failures,
+conflicts and comments, rather than polling. Otherwise use the harness's way to
+wait or poll on an interval (`/loop` in Claude Code), or poll the PR for new
+comments and checks yourself.
 
 Only act on checks and comments newer than the latest push. Verify every bot
 finding against the source before changing code. Fix real findings and CI
