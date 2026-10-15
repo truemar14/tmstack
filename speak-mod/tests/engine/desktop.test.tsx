@@ -74,6 +74,8 @@ test('desktop: the band reads like the app, from speaking through paused to read
   expect(await ui.find({ type: 'Text', text: 'Reading aloud' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: '1 of 2' })).toBeDefined()
   expect((await ui.find({ key: 'speak:toggle' }))?.props.label).toBe('Pause')
+  expect(await ui.find({ key: 'speak:back' })).toBeDefined()
+  expect(await ui.find({ key: 'speak:fwd' })).toBeUndefined()
 
   await ui.press({ key: 'speak:toggle' })
   const resume = await ui.find({ key: 'speak:toggle' })
