@@ -109,4 +109,5 @@ change, pseudocode explains a rule change, and GitHub renders a Mermaid
 `sequenceDiagram` when three or more parties talk to each other.
 
 End the description with a short blurb naming the model and harness that made
-the changes.
+the changes. When the harness gives its own attribution line for pull
+requests, that line is the blurb.

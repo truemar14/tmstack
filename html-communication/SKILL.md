@@ -24,10 +24,9 @@ UI mocks. Not for HTML that ships as part of a product.
   which has no Artifact tool. The `file-upload` skill holds the host's rules:
   what may never go up, in-place updates, and the 401 case.
 
-This skill makes HTML pages. On Claude Code, when the user asks for a "doc",
-make a Claude doc through the Claude Docs connector; when they ask for
-"slides" or a deck, make a
-Slides artifact. A plan, report or review with no format named is an HTML page.
+This skill makes HTML pages. On Claude Code, a request for a doc or a deck
+goes through the Artifact tool's quickstart, which picks the type. A plan,
+report or review with no format named is an HTML page.
 
 ## Document
 

@@ -7,6 +7,11 @@ shelled out around it. Codex has no function hooks and no voice mode.
 - In voice mode (`/voice`, or `/speak on`) every reply's final `Spoken:`
   paragraph is read; the model is asked for that paragraph as hidden context
   beside each prompt, so nothing shows in the transcript.
+- In the Claude desktop app, a turn that ends with the app's recap box is read
+  from that box instead: its recap, then its question. The model is told so,
+  and writes no `Spoken:` paragraph then. A turn without the box still ends
+  with one. The band below draws there too, in the app's own buttons with
+  a sound mark and a slim progress bar; `/speak` is terminal only.
 - `/speak` reads the last reply, `/speak say <text>` speaks a text,
   `/speak <request>` asks the model and reads the answer (`/speak summarize
   that in two sentences`), `/speak stop | pause | resume | back | forward |
@@ -17,7 +22,7 @@ shelled out around it. Codex has no function hooks and no voice mode.
   gives 10,000 credits a month free (roughly 40 to 100 spoken summaries with
   the Flash model) and a commercial licence from the $6 Starter plan.
 - A band above the prompt shows what is being read with a progress line and
-  buttons: back and forward 5 s, pause, stop; after the reply, replay (kept
+  buttons: back 5 s, pause, stop; after the reply, replay (kept
   20 minutes) and close.
 - A new prompt stops this session's reading. Inside [Herdr](https://herdr.dev),
   a terminal workspace for agent sessions, a reply from a session that is not
@@ -30,16 +35,17 @@ shelled out around it. Codex has no function hooks and no voice mode.
 | Path | Role |
 |---|---|
 | `.claude-plugin/plugin.json` | Manifest and `userConfig` (engine; per-engine API key in secure storage, voice and model; speed, focus gate, media pause). |
-| `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `turn.complete`, `command.run` for `/speak`, `ui.render` for the band. |
+| `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `tool.call` for the desktop recap, `turn.complete`, `command.run` for `/speak`, `ui.render` for the band. |
 | `hooks/speakable.ts` | Markdown to spoken text, the `Spoken:` extraction, clip splitting. |
 | `hooks/args.ts` | `/speak` argument parsing. |
 | `hooks/protocol.ts` | The file protocol with the player and the pure helpers around it. |
-| `hooks/band.tsx` | The band's tree. |
+| `hooks/band.tsx` | The band's tree: text marks on the terminal, the app's buttons and two SVGs in the desktop app. |
 | `player/win.ps1` | Windows player: Fish fetches two clips ahead, WPF MediaPlayer, Herdr focus gate, cross-session lock, media pausing, replay. |
 | `player/linux.sh` | Linux player: same protocol over mpv's IPC socket (needs curl, python3, mpv). Hands over to `remote.sh` when the session came in over SSH. |
 | `player/remote.sh` | Drives the SSH client's own player in stdio mode and mirrors its state, so a box without speakers plays through the machine you sit at. |
 | `player/authorize-client.ps1` | One-time, elevated: authorizes a box's SSH key on this Windows machine so it can play here. |
-| `tests/` | Pure-logic tests: `node --test "tests/*.test.ts"` (Node 22.18 or newer strips the types itself). |
+| `tests/*.spec.ts` | Pure-logic tests: `npm test` (Node 22.18 or newer strips the types itself). |
+| `tests/engine/` | Hook tests against the engine: `claude plugin test speak-mod` (Claude Code 2.1.295 or newer): the desktop recap path and the band on both surfaces. |
 
 ## How it works
 
