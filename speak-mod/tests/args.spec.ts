@@ -18,11 +18,15 @@ describe('parseArgs', () => {
   test('engine shows or switches', () => {
     assert.deepEqual(parseArgs('engine'), { kind: 'engine' })
     assert.deepEqual(parseArgs('engine ElevenLabs'), { kind: 'engine', name: 'elevenlabs' })
-    assert.deepEqual(parseArgs('engine the car'), { kind: 'compose', instruction: 'engine the car' })
   })
-  test('anything else is a request for the model', () => {
-    assert.deepEqual(parseArgs('summarize that in two sentences'), { kind: 'compose', instruction: 'summarize that in two sentences' })
-    assert.deepEqual(parseArgs('stop being so verbose'), { kind: 'compose', instruction: 'stop being so verbose' })
+  test('ask sends a request to the model', () => {
+    assert.deepEqual(parseArgs('ask summarize that in two sentences'), { kind: 'ask', instruction: 'summarize that in two sentences' })
+    assert.deepEqual(parseArgs('ask'), { kind: 'help' })
+  })
+  test('a typo or stray words show the help, never a prompt', () => {
+    assert.deepEqual(parseArgs('stauts'), { kind: 'help' })
+    assert.deepEqual(parseArgs('stop being so verbose'), { kind: 'help' })
+    assert.deepEqual(parseArgs('engine the car'), { kind: 'help' })
   })
 })
 

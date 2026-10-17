@@ -4,18 +4,25 @@ Claude Code replies read aloud with a Fish Audio or ElevenLabs voice, as a
 plugin of function hooks ("Claude Mods"), wired into the engine instead of
 shelled out around it. Codex has no function hooks and no voice mode.
 
-- In voice mode (`/voice`, or `/speak on`) every reply's final `Spoken:`
-  paragraph is read; the model is asked for that paragraph as hidden context
-  beside each prompt, so nothing shows in the transcript.
+- Voice mode is off at every session start. `/speak on` turns it on for that
+  session only, and `/speak off` turns it off. Claude Code's own `/voice`
+  dictation does not touch it.
+- In voice mode every reply is read once its turn ends. A short reply is read
+  as it is. A longer one is summarized in one to three plain sentences by a
+  separate Haiku call through the session's own credentials, with no view of
+  the conversation. If that call fails, a toast says so and nothing is read.
+  The model doing the work is never told about the voice, so nothing is added
+  to the conversation and no summary is written into the reply.
 - In the Claude desktop app, a turn that ends with the app's recap box is read
-  from that box instead: its recap, then its question. The model is told so,
-  and writes no `Spoken:` paragraph then. A turn without the box still ends
-  with one. The band below draws there too, in the app's own buttons with
-  a sound mark and a slim progress bar; `/speak` is terminal only.
-- `/speak` reads the last reply, `/speak say <text>` speaks a text,
-  `/speak <request>` asks the model and reads the answer (`/speak summarize
+  from that box instead: its recap, then its question. The band below draws
+  there too, in the app's own buttons with a sound mark and a slim progress
+  bar; `/speak` is terminal only.
+- `/speak` reads the last reply (summarized when it is long), `/speak
+  original` reads it word for word, `/speak say <text>` speaks a text, `/speak
+  ask <request>` asks the model and reads the answer (`/speak ask summarize
   that in two sentences`), `/speak stop | pause | resume | back | forward |
-  replay`, `/speak on | off`, `/speak status`.
+  replay`, `/speak on | off`, `/speak status`, `/speak help`. Any other word
+  shows the help, so a typo never sends a prompt.
 - Two engines, Fish Audio and ElevenLabs: `/speak engine elevenlabs` switches
   (kept across sessions), or set the `engine` option under `/config`. Each has
   its own key, voice and model fields; Fish's free tier is unmetered, ElevenLabs
@@ -35,8 +42,8 @@ shelled out around it. Codex has no function hooks and no voice mode.
 | Path | Role |
 |---|---|
 | `.claude-plugin/plugin.json` | Manifest and `userConfig` (engine; per-engine API key in secure storage, voice and model; speed, focus gate, media pause). |
-| `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `tool.call` for the desktop recap, `turn.complete`, `command.run` for `/speak`, `ui.render` for the band. |
-| `hooks/speakable.ts` | Markdown to spoken text, the `Spoken:` extraction, clip splitting. |
+| `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `tool.call` for the desktop recap, `turn.complete` with the Haiku summary, `command.run` for `/speak`, `ui.render` for the band. |
+| `hooks/speakable.ts` | Markdown to spoken text, clip splitting. |
 | `hooks/args.ts` | `/speak` argument parsing. |
 | `hooks/protocol.ts` | The file protocol with the player and the pure helpers around it. |
 | `hooks/band.tsx` | The band's tree: text marks on the terminal, the app's buttons and two SVGs in the desktop app. |
@@ -45,7 +52,7 @@ shelled out around it. Codex has no function hooks and no voice mode.
 | `player/remote.sh` | Drives the SSH client's own player in stdio mode and mirrors its state, so a box without speakers plays through the machine you sit at. |
 | `player/authorize-client.ps1` | One-time, elevated: authorizes a box's SSH key on this Windows machine so it can play here. |
 | `tests/*.spec.ts` | Pure-logic tests: `npm test` (Node 22.18 or newer strips the types itself). |
-| `tests/engine/` | Hook tests against the engine: `claude plugin test speak-mod` (Claude Code 2.1.295 or newer): the desktop recap path and the band on both surfaces. |
+| `tests/engine/` | Hook tests against the engine: `claude plugin test speak-mod` (Claude Code 2.1.295 or newer): what voice mode reads, `/speak ask`, and the band on both surfaces. |
 
 ## How it works
 
