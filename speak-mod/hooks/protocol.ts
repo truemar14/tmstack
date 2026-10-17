@@ -49,6 +49,15 @@ export const OVER: ReadonlySet<Phase> = new Set<Phase>(['stopped', 'error', 'exp
 
 export const starting = (n: number): PlayerState => ({ phase: 'starting', chunk: 0, n, fraction: 0, paused: false })
 
+// How long a state that should be changing may stay as it is before the job is ended: the player
+// died at startup, or it (or the SSH link to it) went away mid-reply.
+export const STALL_MS = 15_000
+
+// True for a state that a live player would have changed by now: none at all, still the module's
+// own "starting", or playing and not paused (a live player moves the fraction while it plays).
+export const stalls = (state: PlayerState | undefined): boolean =>
+  !state || state.phase === 'starting' || (state.phase === 'playing' && !state.paused)
+
 // The state file's text as a PlayerState, or undefined when it is not one (missing, mid-write).
 export function parseState(text: string): PlayerState | undefined {
   try {
@@ -83,6 +92,12 @@ export function spawnArgv(platform: Platform, root: string, jobFile: string): st
   // setsid -f detaches; the redirects keep the child off the call's pipes, which would otherwise
   // hold the call open until the player exits.
   return ['bash', '-c', 'setsid -f bash "$1" "$2" </dev/null >/dev/null 2>&1', '_', `${root}/player/linux.sh`, jobFile]
+}
+
+// The argv that deletes files, missing ones included: a job's files when its player did not start.
+export function removeArgv(platform: Platform, paths: string[]): string[] {
+  if (platform === 'win32') return ['powershell', '-NoProfile', '-Command', `Remove-Item -Force -ErrorAction SilentlyContinue -LiteralPath ${paths.map(psQuote).join(',')}`]
+  return ['rm', '-f', '--', ...paths]
 }
 
 const psQuote = (s: string) => `'${s.replace(/'/g, "''")}'`

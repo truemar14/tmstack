@@ -18,7 +18,7 @@ import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 import { HELP, parseArgs } from './args.ts'
 import { bandTree, desktopBandTree } from './band.tsx'
 import {
-  ENGINES, isEngine, OVER, parseState, pluginRoot, spawnArgv, starting, tempDirOf,
+  ENGINES, isEngine, OVER, parseState, pluginRoot, removeArgv, spawnArgv, STALL_MS, stalls, starting, tempDirOf,
   type Engine, type Job, type JobSpec, type Platform, type PlayerCommand, type PlayerState,
 } from './protocol.ts'
 import { splitChunks, toSpeakable } from './speakable.ts'
@@ -155,17 +155,28 @@ const stop = async ($: EngineInterface) => {
   clearJob($)
 }
 
-// Polls the player's state file for the band; ends when the player is over.
+// Polls the player's state file for the band; ends when the player is over, or when its state
+// stalls (see stalls in protocol.ts) for STALL_MS.
 const watch = ($: EngineInterface, base: string) => {
   poll?.cancel()
   let last = ''
+  let still = 0 // polls since the state last changed
   poll = $.clock.every(POLL_MS, async () => {
-    if (!job || job.base !== base) return
+    if (job?.base !== base) return
     const state = await readState($, base)
-    if (!state) return
-    const key = JSON.stringify(state)
-    if (key === last) return
+    // stopped, or another reply started, while the file was read
+    if (job?.base !== base) return
+    const key = state ? JSON.stringify(state) : ''
+    if (key === last) {
+      if (++still * POLL_MS < STALL_MS || !stalls(state)) return
+      $.ui.toast('speak: the player stopped answering (see claude-speak-mod.log)', { timeoutMs: 8000 })
+      void sendCommand($, base, 'stop').catch(() => undefined)
+      clearJob($)
+      return
+    }
     last = key
+    still = 0
+    if (!state) return
     job.state = state
     if (OVER.has(state.phase)) {
       if (state.phase === 'error') $.ui.toast(`speak: ${state.message ?? 'voice failed'}`, { timeoutMs: 8000 })
@@ -210,9 +221,12 @@ const speak = async ($: EngineInterface, text: string, gate: boolean): Promise<s
       remote: str('remote_playback', 'auto') || 'auto',
     }, key)
   } catch (err) {
-    clearJob($)
+    if (job?.base === base) clearJob($)
+    await $.process.run(removeArgv(platform, [`${base}.json`, `${base}.state`, `${base}.cmd`])).catch(() => undefined)
     return `speak: ${err instanceof Error ? err.message : String(err)}`
   }
+  // stopped, or another reply started, while the player was starting: stop() already told it to stop
+  if (job?.base !== base) return undefined
   watch($, base)
   $.ui.invalidate('ui.render')
   return undefined

@@ -3,7 +3,8 @@
 # module (see hooks/protocol.ts): bash linux.sh <base>.json
 # The job file { base, chunks, engine, voice, speed, model, gate, session, mediaPause, remote } is read
 # once and deleted. The engine's key comes from the environment: SPEAK_API_KEY (set by the module), else
-# FISH_API_KEY or ELEVENLABS_API_KEY, read from ~/.secrets too. Needs curl, python3 and mpv.
+# FISH_API_KEY or ELEVENLABS_API_KEY, from the environment or that one line of ~/.secrets. It reaches
+# curl through a pipe, never its argv. Needs curl, python3 and mpv.
 #
 # Same protocol as win.ps1, files next to <base>:
 #   <base>.state  written here a few times a second: {phase, chunk, n, fraction, paused, message}
@@ -11,7 +12,8 @@
 #
 # Clips are fetched two ahead of the one playing; each plays in mpv over an IPC socket, which gives
 # pause/resume and ±5 s (within the clip). In gated mode the reply waits until its session is the
-# focused Herdr pane (dropped after 15 min). One voice at a time across sessions via flock. After
+# focused Herdr pane (focused.sh; dropped after 15 min). One voice at a time across sessions via
+# flock on fd 9, which no child inherits, so a stopped or killed player frees it at once. After
 # the reply the clips stay 20 min for a replay, then everything is deleted. No media pausing here.
 # Log: $XDG_RUNTIME_DIR/claude-speak-mod.log
 # Stdio mode (--stdio, no job file): the job arrives as the first line of standard input, commands as
@@ -19,6 +21,7 @@
 # remote machine (a dev box, over SSH) plays through this machine's speakers: see remote.sh. End of
 # input counts as "stop".
 set -uo pipefail
+DIR=$(dirname "${BASH_SOURCE[0]}")
 RUN=${XDG_RUNTIME_DIR:-/tmp}
 LOG=$RUN/claude-speak-mod.log
 [[ -f $LOG && $(stat -c %s "$LOG" 2>/dev/null || echo 0) -gt 200000 ]] && : >"$LOG"
@@ -34,7 +37,7 @@ else
   # player over SSH. "auto" means: this session came in over SSH.
   REMOTE=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("remote") or "auto")' "$JOB" 2>/dev/null || echo auto)
   if [[ $REMOTE != off ]] && { [[ $REMOTE != auto ]] || [[ -n ${SSH_CONNECTION:-} ]]; }; then
-    exec bash "$(dirname "${BASH_SOURCE[0]}")/remote.sh" "$JOB"
+    exec bash "$DIR/remote.sh" "$JOB"
   fi
 fi
 
@@ -117,45 +120,46 @@ PY
 }
 
 # --- turn taking -----------------------------------------------------------------------------------
-focused() {   # true unless Herdr knows this session and another pane is focused
-  [[ -n $SID && -n ${HERDR_ENV:-} ]] || return 0
-  local cur
-  cur=$(env -u HERDR_PANE_ID -u HERDR_TAB_ID -u HERDR_WORKSPACE_ID herdr pane current 2>/dev/null \
-        | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["pane"]["agent_session"]["value"])' 2>/dev/null) || return 0
-  [[ $cur == "$SID" ]] && return 0
-  herdr agent list 2>/dev/null | python3 -c 'import json,sys; a=json.load(sys.stdin)["result"]["agents"]; sys.exit(0 if any(x.get("agent_session",{}).get("value")==sys.argv[1] for x in a) else 1)' "$SID" 2>/dev/null || return 0
-  return 1
-}
-wait_turn() {   # gate on focus (15 min), then the cross-session lock; returns 1 when stopped/expired
-  if [[ $GATE == 1 ]] && ! focused; then
-    set_phase held
-    local t; for ((t = 0; t < 900; t++)); do handle_cmd; ((STOP)) && return 1; focused && break; sleep 1; done
-    focused || { set_phase expired; return 1; }
-    set_phase fetching
-  fi
+focused() { [[ $GATE != 1 ]] || bash "$DIR/focused.sh" "$SID"; }
+# Gates on focus (15 min held in all), takes the cross-session lock, then checks focus again: a reply
+# queued behind another session's waits again if its pane lost focus meanwhile. Returns 1 when
+# stopped or expired.
+wait_turn() {
+  local t=0
   exec 9>"$RUN/claude-speak.lock"
-  until flock -n 9; do handle_cmd; ((STOP)) && return 1; sleep 0.2; done
-  return 0
+  while :; do
+    if ! focused; then
+      set_phase held
+      for (( ; t < 900; t++)); do handle_cmd; ((STOP)) && return 1; focused && break; sleep 1; done
+      ((t < 900)) || { set_phase expired; return 1; }
+      set_phase fetching
+    fi
+    until flock -n 9; do handle_cmd; ((STOP)) && return 1; sleep 0.2; done
+    focused && return 0
+    flock -u 9
+  done
 }
 
 # --- fetching and playing ----------------------------------------------------------------------------
 fetch() {   # fetch <i>: one request in the background, per engine; writes <base>-<i>.mp3, or .fail
-  local i=$1 body url
-  local -a auth
+  local i=$1 body url headers
   if [[ $ENGINE == elevenlabs ]]; then
     # POST /v1/text-to-speech/<voice> with the model in the body; its speed range is 0.7..1.2
     body=$(python3 -c 'import json,sys; print(json.dumps({"text":sys.argv[1],"model_id":sys.argv[2],"voice_settings":{"speed":max(0.7,min(1.2,float(sys.argv[3])))}}))' "${CHUNKS[$i]}" "$MODEL" "$SPEED")
     url="https://api.elevenlabs.io/v1/text-to-speech/$VOICE?output_format=mp3_44100_128"
-    auth=(-H "xi-api-key: $KEY")
+    headers="xi-api-key: $KEY"
   else
     body=$(python3 -c 'import json,sys; b={"text":sys.argv[1],"format":"mp3","latency":"balanced","prosody":{"speed":float(sys.argv[3])}}
 if sys.argv[2]: b["reference_id"]=sys.argv[2]
 print(json.dumps(b))' "${CHUNKS[$i]}" "$VOICE" "$SPEED")
     url=https://api.fish.audio/v1/tts
-    auth=(-H "Authorization: Bearer $KEY" -H "model: $MODEL")
+    headers="Authorization: Bearer $KEY"$'\n'"model: $MODEL"
   fi
+  # The headers reach curl through a pipe (printf is a builtin), so the key never shows in ps.
+  # fd 9 (the lock) is closed here, so a fetch never holds the next session's turn.
   (
-    if curl -sS --fail --max-time 120 -X POST "$url" "${auth[@]}" -H 'Content-Type: application/json' \
+    exec 9>&-
+    if curl -sS --fail --max-time 120 -X POST "$url" -H @<(printf '%s\n' "$headers") -H 'Content-Type: application/json' \
          --data-binary "$body" -o "$BASE-$i.part" 2>>"$LOG"; then mv "$BASE-$i.part" "$BASE-$i.mp3"
     else log "fetch $i failed"; : >"$BASE-$i.fail"; fi
   ) &
@@ -165,7 +169,7 @@ play_clip() {   # play_clip <i> <from> <to> [<start seconds>]: 0 played to the e
   rm -f "$SOCK"
   # SPEAK_MPV_OPTS adds mpv options (e.g. --ao=null to test without a sound device)
   # shellcheck disable=SC2086
-  mpv --no-terminal --really-quiet --input-ipc-server="$SOCK" --start="$start" --pause="$([[ $PAUSED == true ]] && echo yes || echo no)" ${SPEAK_MPV_OPTS:-} "$BASE-$i.mp3" </dev/null &
+  mpv --no-terminal --really-quiet --input-ipc-server="$SOCK" --start="$start" --pause="$([[ $PAUSED == true ]] && echo yes || echo no)" ${SPEAK_MPV_OPTS:-} "$BASE-$i.mp3" </dev/null 9>&- &
   MPV_PID=$!
   while kill -0 "$MPV_PID" 2>/dev/null; do
     handle_cmd
@@ -209,10 +213,22 @@ wait_replay() {   # after a full read: 0 on replay (REPLAY_BACK set for "back"),
 
 cleanup() { kill "${MPV_PID:-}" 2>/dev/null; rm -f "$BASE"-*.mp3 "$BASE"-*.part "$BASE"-*.fail "$BASE.chunks" "$CMD" "$SOCK"; }
 trap 'cleanup; exit 143' TERM
-# The engine's key: SPEAK_API_KEY from the module, else the engine's own variable (from ~/.secrets too).
+# The engine's key: SPEAK_API_KEY from the module, else the engine's own variable, else its line in
+# ~/.secrets (export NAME=value; the last one wins, as when sourced). Nothing else there is run.
 KEYVAR=FISH_API_KEY; [[ $ENGINE == elevenlabs ]] && KEYVAR=ELEVENLABS_API_KEY
 KEY=${SPEAK_API_KEY:-${!KEYVAR:-}}
-if [[ -z $KEY && -r ~/.secrets ]]; then set +u; source ~/.secrets; set -u; KEY=${!KEYVAR:-}; fi
+unset SPEAK_API_KEY
+if [[ -z $KEY && -r ~/.secrets ]]; then
+  KEY=$(python3 - "$KEYVAR" <<'PY' 2>/dev/null
+import os, re, shlex, sys
+key = ''
+for line in open(os.path.expanduser('~/.secrets'), encoding='utf-8'):
+    m = re.match(r'\s*(?:export\s+)?' + re.escape(sys.argv[1]) + r'=(.*)', line)
+    if m: key = (shlex.split(m.group(1), comments=True) or [''])[0]
+print(key)
+PY
+)
+fi
 [[ -n $KEY ]] || { set_phase error "$KEYVAR is not set on $(hostname)"; ((STDIO)) || { sleep 5; rm -f "$STATE"; }; rm -f "$BASE.chunks"; exit 1; }
 log "start, $N chunks, gate=$GATE, session=$SID"
 write_state
@@ -224,6 +240,7 @@ while play_round "$first" "$start"; do
   if ((REPLAY_BACK)); then first=$((N - 1)); start=0; fi   # "back" after the end: the last clip again
   log "replay from chunk $first"
 done
+exec 9>&-   # the lock goes now, not after the fetches still running below
 ((STOP)) && set_phase stopped
 wait
 cleanup

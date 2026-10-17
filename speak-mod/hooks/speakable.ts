@@ -1,16 +1,28 @@
 // Pure text functions: a reply turned into speakable text and cut into clips.
 
 // Turns markdown into something that reads well aloud: tables become "cell, cell, cell." sentences,
-// headings and bullets lose their markers (headings gain a period so the voice pauses), links keep
-// the label, bare URLs shrink to their host, code blocks are skipped, arrows and rules become words
-// or nothing.
+// headings and bullets lose their markers, links keep the label, bare URLs shrink to their host,
+// code blocks (``` or ~~~, closed or not) are skipped, arrows and rules become words or nothing.
+// Every kept line ends in punctuation (a period is added where it has none), so list items and
+// short lines are read as separate sentences, not run together.
 export function toSpeakable(input: string): string {
-  let s = input.replace(/```[\s\S]*?```/g, '\ncode block omitted.\n')
-  s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [label](url) -> label
-  s = s.replace(/https?:\/\/([^/\s)]+)\S*/g, '$1') // bare URL -> host
+  let s = input.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [label](url) -> label
+  // bare URL -> host; punctuation after it stays
+  s = s.replace(/https?:\/\/([^/?#\s)]+?)(?:[/?#]\S*?)?(?=[.,;:!?'")\]]*(?:\s|$))/g, '$1')
   const out: string[] = []
+  let fence = '' // the open code fence, e.g. "```" or "~~~~"
   for (const line of s.split(/\r?\n/)) {
     let t = line.trim()
+    if (fence) {
+      if (t.startsWith(fence) && new RegExp(`^\\${fence[0]}+$`).test(t)) fence = ''
+      continue
+    }
+    const open = /^(`{3,})[^`]*$|^(~{3,})/.exec(t) // a backtick fence's info string has no backticks
+    if (open) {
+      fence = open[1] ?? open[2] ?? ''
+      out.push('code block omitted.')
+      continue
+    }
     if (/^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(t)) continue // table separator row
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) continue // horizontal rule
     if (/^\|.*\|$/.test(t)) {
@@ -22,6 +34,7 @@ export function toSpeakable(input: string): string {
     t = t.replace(/^#{1,6}\s+(.+?)[.:]?$/, '$1.') // heading -> "Heading."
     t = t.replace(/^>\s?/, '') // blockquote
     t = t.replace(/^([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?/, '') // bullet / numbered / checkbox
+    if (t && !/[.!?:;,]["'”’)\]*_`~]*$/.test(t)) t += '.'
     out.push(t)
   }
   s = out.join('\n')

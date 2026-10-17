@@ -50,9 +50,10 @@ shelled out around it. Codex has no function hooks and no voice mode.
 | `player/win.ps1` | Windows player: Fish fetches two clips ahead, WPF MediaPlayer, Herdr focus gate, cross-session lock, media pausing, replay. |
 | `player/linux.sh` | Linux player: same protocol over mpv's IPC socket (needs curl, python3, mpv). Hands over to `remote.sh` when the session came in over SSH. |
 | `player/remote.sh` | Drives the SSH client's own player in stdio mode and mirrors its state, so a box without speakers plays through the machine you sit at. |
+| `player/focused.sh` | The Herdr focus check, for `linux.sh` and for `remote.sh` on the box. |
 | `player/authorize-client.ps1` | One-time, elevated: authorizes a box's SSH key on this Windows machine so it can play here. |
-| `tests/*.spec.ts` | Pure-logic tests: `npm test` (Node 22.18 or newer strips the types itself). |
-| `tests/engine/` | Hook tests against the engine: `claude plugin test speak-mod` (Claude Code 2.1.295 or newer): what voice mode reads, `/speak ask`, and the band on both surfaces. |
+| `tests/*.spec.ts` | `npm test` (Node 22.18 or newer strips the types itself): the pure logic, and the Linux players' focus check and remote handoff with stand-ins for `herdr` and `ssh`. |
+| `tests/engine/` | Hook tests against the engine: `claude plugin test speak-mod` (Claude Code 2.1.295 or newer): what voice mode reads, `/speak ask`, the band on both surfaces, and a player that stops answering. |
 
 ## How it works
 
@@ -83,7 +84,7 @@ environment variable, never on disk.
    `ELEVENLABS_API_KEY` environment variable is used. Keys come from
    [fish.audio](https://fish.audio) and [elevenlabs.io](https://elevenlabs.io).
    The Linux player also reads a key from `~/.secrets` when that file exists,
-   as a `KEY=value` line.
+   from its `KEY=value` line alone (the rest of the file is not run).
 3. Linux only: `curl`, `python3`, `mpv` and util-linux (`flock`, `setsid`)
    on the PATH.
 
@@ -107,6 +108,11 @@ re-attaches) or, when that peer is offline (a Herdr server keeps the address of
 whoever started it), the live SSH login from `who` whose Tailscale peer is
 online. It is named through `tailscale whois`; `~/.ssh/config` on the box
 supplies the user (`Host <client hostname>` / `User <windows user>`).
+
+The focus gate runs on the box, before the handoff: the client's Herdr does not
+know a session on the box, so the box's Herdr holds the reply until its pane is
+focused, and the client then plays it right away. If the link drops before the
+client's player reports its last phase, the band shows an error.
 
 One-time per client: the mod installed there and one session started (that
 writes the launcher), and an SSH server that accepts the box's key. On Linux, Tailscale SSH does it. On Windows the built-in OpenSSH

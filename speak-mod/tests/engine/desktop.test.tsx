@@ -11,6 +11,7 @@ type Summary = { isAnswered: true; text: string } | { isAnswered: false; reason:
 // Stands in for the machine beneath the mod: a key, a session, a player that starts, and a
 // summarizer. `jobs` are the job files the mod writes, one per reply it hands to the
 // player; `player.state` is what the player's state file holds, read on the band's next poll;
+// `player.start` answers each process the mod runs with its exit code, and `runs` are their argv;
 // `summaries` are the prompts the mod sent to the summary model, and `model.reply` what it answers;
 // `prompts` are the prompt texts that reached core; `toasts` what the mod showed.
 function machine(on: On) {
@@ -18,7 +19,8 @@ function machine(on: On) {
   const summaries: string[] = []
   const prompts: string[] = []
   const toasts: string[] = []
-  const player = { state: '' }
+  const runs: string[][] = []
+  const player = { state: '', start: (): Promise<number> => Promise.resolve(0) }
   const model = { reply: (): Promise<Summary> => Promise.resolve({ isAnswered: true, text: 'I fixed the bug.' }) }
   mock.env(on, { HOME: '/home/u', XDG_RUNTIME_DIR: '/run/u', FISH_API_KEY: 'key' })
   mock.store(on, {})
@@ -35,11 +37,14 @@ function machine(on: On) {
     return Promise.resolve({ value: undefined })
   })
   on('fs.read', () => Promise.resolve(player.state ? { value: player.state } : { deny: 'no state yet' }))
-  on('process.run', () => Promise.resolve({ value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }))
+  on('process.run', async (_$, e) => {
+    runs.push([...e.argv])
+    return { value: { exitCode: await player.start(), stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
   on('prompt.submit', (_$, e) => (prompts.push(e.text), Promise.resolve({ text: e.text, context: e.context })))
   on('turn.start', (_$, e) => Promise.resolve({ turnId: e.turnId }))
   on('turn.complete', (_$, e) => Promise.resolve({ text: e.answer }))
-  return { jobs, summaries, prompts, toasts, model, clock, player }
+  return { jobs, runs, summaries, prompts, toasts, model, clock, player }
 }
 
 const turn = (answer: string, turnId = 't1') => ({ answer, reason: 'answer' as const, durationMs: 1, isAborted: false, turnId })
@@ -159,4 +164,43 @@ test('desktop: the band reads like the app, from speaking through paused to read
   await clock.advance(300)
   expect(await ui.find({ key: 'speak:replay' })).toBeDefined()
   expect(await ui.find({ key: 'speak:toggle' })).toBeUndefined()
+})
+
+test('a player that stops answering ends the band with a toast; a paused one does not', async ($, on) => {
+  const { toasts, clock, player } = machine(on)
+  const status = async () => (await $.command.run({ command: 'speak', args: 'status' })).text
+  await $.command.run({ command: 'speak', args: 'say Reading this.' })
+  player.state = JSON.stringify({ phase: 'playing', chunk: 0, n: 1, fraction: 0.2, paused: true })
+  await clock.advance(30_000)
+  expect(await status()).toContain('playing')
+  player.state = ''
+  await clock.advance(16_000)
+  expect(await status()).toContain('idle')
+  expect(toasts.at(-1)).toContain('stopped answering')
+})
+
+test('a player that does not start leaves no files behind', async ($, on) => {
+  const { runs, player } = machine(on)
+  player.start = () => Promise.resolve(1)
+  const r = await $.command.run({ command: 'speak', args: 'say Reading this.' })
+  expect(r.text).toContain('player did not start')
+  expect(runs.at(-1)?.join(' ')).toContain('Remove-Item')
+  expect(runs.at(-1)?.join(' ')).toContain('.state')
+})
+
+test('a reply started while another player was starting keeps its progress', async ($, on) => {
+  const { clock, player } = machine(on)
+  let release = () => {}
+  const starting = new Promise<void>(reached => {
+    player.start = () => new Promise(done => { release = () => done(0); player.start = () => Promise.resolve(0); reached() })
+  })
+  const first = $.command.run({ command: 'speak', args: 'say First.' })
+  await starting
+  await clock.advance(1) // a later base for the second reply
+  await $.command.run({ command: 'speak', args: 'say Second.' })
+  release()
+  await first
+  player.state = JSON.stringify({ phase: 'playing', chunk: 0, n: 1, fraction: 0.4, paused: false })
+  await clock.advance(300)
+  expect((await $.command.run({ command: 'speak', args: 'status' })).text).toContain('playing 1/1')
 })

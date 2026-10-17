@@ -14,9 +14,14 @@
 # maybe from another machine. So every live SSH login on the box (`who`) is a candidate too, and
 # with tailscale around the first candidate whose peer is online wins. The address is turned into a
 # Tailscale peer name; the SSH user and key come from ~/.ssh/config as usual.
+#
+# The focus gate runs here, before the handoff: the client's Herdr does not know a session on this
+# box, so the box's Herdr decides (focused.sh), and the client plays right away. If the link drops
+# before the player's last phase came back, the state says so, so the band does not hang.
 # Usage: bash remote.sh <base>.json   (linux.sh hands over here by itself; see its header)
 set -uo pipefail
 JOB=${1:?job file}
+DIR=$(dirname "${BASH_SOURCE[0]}")
 RUN=${XDG_RUNTIME_DIR:-/tmp}
 LOG=$RUN/claude-speak-mod.log
 log() { printf '%s [%s] remote: %s\n' "$(date +%H:%M:%S.%3N)" "$$" "$*" >>"$LOG" 2>/dev/null || true; }
@@ -26,7 +31,10 @@ import json, shlex, sys
 j = json.load(open(sys.argv[1], encoding='utf-8'))
 print('BASE=' + shlex.quote(j['base']))
 print('REMOTE=' + shlex.quote(j.get('remote') or 'auto'))
-j['gate'] = False        # the client's Herdr does not know this session; play right away
+print('GATE=' + ('1' if j.get('gate') else '0'))
+print('SID=' + shlex.quote(j.get('session') or ''))
+print('N=%d' % len(j['chunks']))
+j['gate'] = False        # gated here already (see the header)
 j['mediaPause'] = False  # an SSH login session cannot see the desktop's media sessions
 print('JOBLINE=' + shlex.quote(json.dumps(j)))
 PY
@@ -34,9 +42,22 @@ PY
 rm -f "$JOB"
 STATE=$BASE.state; CMD=$BASE.cmd
 state() {   # state <phase> [message]: one state line the module understands, written the file way
-  printf '{"phase":"%s","chunk":0,"n":0,"fraction":0,"paused":false,"message":"%s"}' "$1" "${2:-}" >"$STATE.tmp" && mv -f "$STATE.tmp" "$STATE"
+  printf '{"phase":"%s","chunk":0,"n":%d,"fraction":0,"paused":false,"message":"%s"}' "$1" "$N" "${2:-}" >"$STATE.tmp" && mv -f "$STATE.tmp" "$STATE"
 }
 fail() { log "$1"; state error "$1"; sleep 5; rm -f "$STATE"; exit 1; }
+finish() { sleep 5; rm -f "$STATE" "$CMD"; exit 0; }
+
+# --- focus gate (15 min), on this box ------------------------------------------------------------
+stopped() {   # true when the module sent "stop"; any other command stays for the player
+  local c; [[ -e $CMD ]] || return 1; c=$(<"$CMD"); [[ ${c//[[:space:]]/} == stop ]] || return 1
+  rm -f "$CMD"; log "stopped while held"; state stopped
+}
+if [[ $GATE == 1 ]] && ! bash "$DIR/focused.sh" "$SID"; then
+  state held; log "held until session $SID is focused"
+  for ((t = 0; t < 900; t++)); do stopped && finish; bash "$DIR/focused.sh" "$SID" && break; sleep 1; done
+  ((t < 900)) || { state expired; finish; }
+  state starting
+fi
 
 # --- which machine ---------------------------------------------------------------------------------
 client_ip() {   # the SSH client to play on (see the header), or nothing
@@ -87,19 +108,25 @@ log "client uname '${os}', launcher $launcher"
 
 # --- bridge ------------------------------------------------------------------------------------------
 coproc PLAYER { "${SSH[@]}" "$launcher" 2>>"$LOG"; }
-PIN=${PLAYER[1]}; POUT=${PLAYER[0]}
+# bash closes the coprocess's pipe ends and unsets its pid once it reaps it, so keep copies: the
+# player's last lines can still be read after it exited
+exec {PIN}>&"${PLAYER[1]}" {POUT}<&"${PLAYER[0]}"
+PID=$PLAYER_PID
 printf '%s\n' "$JOBLINE" >&"$PIN" || fail "player on $target did not start"
 trap 'printf "stop\n" >&"$PIN" 2>/dev/null; exit 143' TERM
-got=0
-while kill -0 "$PLAYER_PID" 2>/dev/null; do
-  if [[ -e $CMD ]]; then c=$(<"$CMD"); rm -f "$CMD"; c=${c//[[:space:]]/}; log "command $c"; printf '%s\n' "$c" >&"$PIN" 2>/dev/null || { log "player pipe closed"; break; }; fi
-  if IFS= read -r -t 0.1 line <&"$POUT"; then
-    [[ $line == \{* ]] || continue
-    got=1; printf '%s' "$line" >"$STATE.tmp" && mv -f "$STATE.tmp" "$STATE"
-  fi
+got=0; last=
+while :; do
+  if [[ -e $CMD ]]; then c=$(<"$CMD"); rm -f "$CMD"; c=${c//[[:space:]]/}; log "command $c"; printf '%s\n' "$c" >&"$PIN" 2>/dev/null || log "player pipe closed"; fi
+  IFS= read -r -t 0.1 line <&"$POUT"; rc=$?
+  ((rc > 128)) && continue    # nothing yet
+  ((rc == 0)) || break        # end of output: the player exited, or the link dropped
+  [[ $line == \{* ]] || continue
+  got=1; [[ $line =~ \"phase\":\ ?\"([a-z]+)\" ]] && last=${BASH_REMATCH[1]}
+  printf '%s' "$line" >"$STATE.tmp" && mv -f "$STATE.tmp" "$STATE"
 done
-wait "$PLAYER_PID" 2>/dev/null
+wait "$PID" 2>/dev/null
 ((got)) || fail "no player answered on $target (is the speak mod installed there?)"
-log "done"
-sleep 5
-rm -f "$STATE" "$CMD"
+case $last in
+  stopped|error|expired) log "done ($last)"; finish ;;
+  *) fail "lost the player on $target while $last" ;;
+esac
