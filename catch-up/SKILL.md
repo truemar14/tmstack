@@ -83,17 +83,5 @@ Finished work and past decisions appear under **Stopped at** only when they
 bear on the next step. Drift joins **Stopped at**, because it changes where
 things stand.
 
-When voice mode is on, the user listens first and reads only when that was
-not enough. The spoken part (the speak plugin's `Spoken:` paragraph) is then
-the main output: exactly three sentences, in this order every time, so the
-ear learns the pattern.
-
-1. What the session is about and where it stopped, drift included.
-2. What the user owes, or that nothing is waiting on them.
-3. The next step you recommend, or that the session can be closed.
-
-When voice mode is off, the headings stand alone: the three sentences exist
-only in the spoken part.
-
 Then stop and let the user choose: the handoff ends with the recommendation,
 not with the step taken.

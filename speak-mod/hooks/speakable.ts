@@ -1,4 +1,4 @@
-// Pure text functions: what of a reply is spoken and how it is cut into clips.
+// Pure text functions: a reply turned into speakable text and cut into clips.
 
 // Turns markdown into something that reads well aloud: tables become "cell, cell, cell." sentences,
 // headings and bullets lose their markers (headings gain a period so the voice pauses), links keep
@@ -29,16 +29,6 @@ export function toSpeakable(input: string): string {
   s = s.replace(/\s*(→|->|=>)\s*/g, ' to ')
   s = s.replace(/\s*(←|<-)\s*/g, ' from ')
   return s.replace(/\n{3,}/g, '\n\n').trim()
-}
-
-// The part of a reply that is read in voice mode: what follows the last "Spoken:" marker, or the
-// whole reply when it has none. An empty result ("Spoken:" with nothing after it) means the reply
-// chose to stay silent, e.g. the one-line confirmation after a /speak.
-export function spokenOf(reply: string): string {
-  const marks = [...reply.matchAll(/^\s*Spoken:\s*/gm)]
-  const last = marks[marks.length - 1]
-  if (!last || last.index === undefined) return reply.trim()
-  return reply.slice(last.index + last[0].length).trim()
 }
 
 // Splits text at sentence ends into clips: a short first one (fast time-to-first-audio), longer

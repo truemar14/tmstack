@@ -65,9 +65,7 @@ causes. Spend disproportionate effort here.
    one, or two configs, with the outputs diffed.
 10. **A person at the screen.** Last resort, for a bug only a human can
     trigger. Write the steps as a numbered list and say exactly what to
-    capture at each one (a screenshot, a log line, a timestamp). In voice
-    mode, keep the list short and put it in the spoken part (the speak
-    plugin's `Spoken:` paragraph).
+    capture at each one (a screenshot, a log line, a timestamp).
 
 ### Tighten the loop
 
@@ -150,8 +148,7 @@ discard or sharpen it.
 
 Show the ranked list to the user before testing. They often have knowledge that
 re-ranks it at once ("we just deployed a change to number three") or has
-already ruled some out. In voice mode, the top two and the recommended first
-probe go in the spoken part. Do not block on it: proceed with your ranking if
+already ruled some out. Do not block on it: proceed with your ranking if
 they are away.
 
 ## Phase 4: instrument

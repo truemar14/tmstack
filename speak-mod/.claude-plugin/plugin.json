@@ -1,7 +1,7 @@
 {
   "name": "speak",
   "version": "0.3.0",
-  "description": "Reads Claude's replies aloud with a neural voice from Fish Audio or ElevenLabs. In voice mode every answer's Spoken paragraph is read; /speak reads the last reply, speaks text, or asks the model for a spoken summary. Playback controls (pause, back and forward 5 s, stop, replay) sit above the prompt. Needs function hooks (early access) and a terminal with speakers.",
+  "description": "Reads Claude's replies aloud with a neural voice from Fish Audio or ElevenLabs. With /speak on (per session) every answer is read, long ones as a short Haiku summary; /speak reads the last reply, speaks text, or asks the model for a spoken answer. Playback controls (pause, back 5 s, stop, replay) sit above the prompt. Needs function hooks (early access) and a terminal with speakers.",
   "author": { "name": "Mariyan Damyanov" },
   "license": "MIT",
   "keywords": ["voice", "tts", "speech", "fish-audio", "elevenlabs", "function-hooks"],

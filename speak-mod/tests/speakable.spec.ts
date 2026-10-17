@@ -1,7 +1,7 @@
 // node --test "tests/*.test.ts"  (Node 22.18+ strips the types itself)
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { spokenOf, splitChunks, toSpeakable } from '../hooks/speakable.ts'
+import { splitChunks, toSpeakable } from '../hooks/speakable.ts'
 
 describe('toSpeakable', () => {
   test('tables become sentences, separators and rules go', () => {
@@ -11,21 +11,6 @@ describe('toSpeakable', () => {
   test('headings, bullets, links, urls, code blocks, arrows', () => {
     const s = toSpeakable('## Result:\n- **bold** item\n1. [docs](https://x.y/z) at https://api.fish.audio/v1/tts\n```js\nx()\n```\na -> b')
     assert.equal(s, 'Result.\nbold item\ndocs at api.fish.audio\n\ncode block omitted.\n\na to b')
-  })
-})
-
-describe('spokenOf', () => {
-  test('takes what follows the last Spoken marker', () => {
-    assert.equal(spokenOf('Long screen text.\n\nSpoken: first.\n\nMore.\nSpoken: the summary.'), 'the summary.')
-  })
-  test('the whole reply when there is no marker', () => {
-    assert.equal(spokenOf('  Just a line.  '), 'Just a line.')
-  })
-  test('an empty marker means silence', () => {
-    assert.equal(spokenOf('Speaking.\n\nSpoken:'), '')
-  })
-  test('a bold marker survives the markdown rewrite', () => {
-    assert.equal(spokenOf(toSpeakable('text\n\n**Spoken:** read me.')), 'read me.')
   })
 })
 
