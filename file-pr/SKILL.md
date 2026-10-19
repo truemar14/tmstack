@@ -108,6 +108,10 @@ A shallow file tree explains a layout change, a call tree explains a flow
 change, pseudocode explains a rule change, and GitHub renders a Mermaid
 `sequenceDiagram` when three or more parties talk to each other.
 
+When the merge is a one-way door, hard to walk back once it lands (a
+migration, a removed API, data written in a new format), say so in one line
+with what it reaches beyond the diff.
+
 End the description with a short blurb naming the model and harness that made
 the changes. When the harness gives its own attribution line for pull
 requests, that line is the blurb.
