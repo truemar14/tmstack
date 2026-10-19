@@ -253,6 +253,13 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
+  // /clear drops the conversation, so the reading and its band go with it. session.start does not
+  // fire on /clear, hence the command hook.
+  on('command.run', { command: 'clear' }, async ($, e, next) => {
+    await stop($)
+    return next(e)
+  })
+
   // A main-loop turn starts (a subagent's raises none): the last turn's recap goes, a summary still
   // being written is dropped, and the turn is marked when `/speak ask`'s prompt started it. Marking
   // here, not at prompt.submit, keeps an ask sent mid-turn off the turn that was running.
