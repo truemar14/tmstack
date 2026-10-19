@@ -67,19 +67,33 @@ The installer does not set up:
 | `review-loop/` | Review a PR with a fresh reviewer each round, fix, and repeat until a round is clean; merge only when asked. Works through every open PR in dependency order. |
 | `test-handoff/` | Check a change in the real app before handing it over, then give the user numbered test scenarios and the steps only they can do. |
 | `wait-what/` | Restate the last reply in plain words: what happened, what it means, the next step. |
+| `retro/` | Look back at a session from its transcript and propose changes to the agent's environment: checks, pointers, skills, steering files. Applies only what the user picks. User-invoked. |
+| `blast-radius/` | Find what a change breaks outside its diff, and prove the one fact it is safe because of by running real code. User-invoked. |
+| `handoff/` | Write a handoff document a fresh agent can continue from, where the next machine can read it. User-invoked. |
 
 The skills call each other. html-communication publishes an Artifact, or goes
 through file-upload when the link must open without a login. file-pr and
 babysit-pr use file-upload for screenshots. file-pr sketches a change as a
 file tree or call tree when that reads faster, and hands off to babysit-pr.
 file-pr and html-communication run their prose through unslop before it
-ships. review-loop holds each round to babysit-pr's done bar.
+ships. review-loop holds each round to babysit-pr's done bar. Where one skill runs
+another, it says "Call the Skill tool with" and the name, the convention in
+`writing-for-agents/SKILL-MECHANICS.md`.
 
-grilling, domain-modeling, writing-for-agents and diagnosing-bugs are adapted
-from Matt Pocock's skills (1.2.3, MIT). unslop is adapted from
-backnotprop/pstack (MIT). frontend-design is a verbatim copy from
-anthropics/skills (Apache 2.0), and it keeps upstream's dashes, so it is the
-one file exempt from the house style in `writing-for-agents`. Each adapted
+retro, blast-radius and handoff are user-invoked: they fire only when typed,
+so their descriptions take no room in the agent's context. Each carries an
+`agents/openai.yaml` so Codex treats it the same way.
+
+grilling, domain-modeling, writing-for-agents, diagnosing-bugs, retro and
+handoff are adapted from Matt Pocock's skills (MIT; the version is in each
+`LICENSE.txt`). unslop and blast-radius are adapted from backnotprop/pstack
+(MIT). Some sections borrow ideas in new words: babysit-pr's handling of review
+comments and test-handoff's evidence table from obra/superpowers,
+diagnosing-bugs' measurement checks from pstack, and test-handoff's headless
+fallback from anthropics/skills' webapp-testing. frontend-design is a
+verbatim copy from anthropics/skills (Apache 2.0), and it keeps upstream's
+dashes, so it is the one file exempt from the house style in
+`writing-for-agents`. Each adapted
 skill keeps the source notice in its `LICENSE.txt`. Everything else is MIT,
 see `LICENSE`.
 
