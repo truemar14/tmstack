@@ -137,6 +137,7 @@ test('only the user stops a reading: a message from another session or a backgro
   const status = async () => (await $.command.run({ command: 'speak', args: 'status' })).text
   await $.prompt.submit({ ...submit, origin: { kind: 'peer' as const } })
   await $.prompt.submit({ ...submit, origin: { kind: 'task-notification' as const } })
+  await $.prompt.submit({ ...submit, origin: { kind: 'plugin' as const, name: 'other-mod' } })
   expect(await status()).not.toContain('idle')
   await $.prompt.submit(submit)
   expect(await status()).toContain('idle')
@@ -158,6 +159,29 @@ test('a reply from a turn the user did not start waits for the reading, then is 
   await clock.advance(300)
   expect(jobs.length).toBe(2)
   expect(jobs[1]?.chunks.join(' ')).toBe('What the report changed.')
+})
+
+test("an automated turn's reply waits while the user's reply is still being summarized", async ($, on) => {
+  const { jobs, model, player, clock } = machine(on)
+  let release = () => {}
+  let asked = () => {}
+  const summaryAsked = new Promise<void>(done => { asked = done })
+  model.reply = () => new Promise(done => { release = () => done({ isAnswered: true, text: 'The user summary.' }); asked() })
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.start({ text: 'hi', turnId: 't1' })
+  const reading = $.turn.complete(turn(LONG, 't1'))
+  await summaryAsked
+  await $.prompt.submit({ ...submit, text: 'a report', origin: { kind: 'task-notification' as const } })
+  await $.turn.start({ text: 'a report', turnId: 't2' })
+  await $.turn.complete(turn('The report.', 't2'))
+  expect(jobs.length).toBe(0)
+  release()
+  await reading
+  expect(jobs.map(j => j.chunks.join(' '))).toEqual(['The user summary.'])
+  player.state = JSON.stringify({ phase: 'done', chunk: 0, n: 1, fraction: 1, paused: false })
+  await clock.advance(300)
+  expect(jobs.map(j => j.chunks.join(' '))).toEqual(['The user summary.', 'The report.'])
 })
 
 test('/speak off drops a reply that waits for the reading', async ($, on) => {

@@ -64,12 +64,15 @@ let speakSeq = 0
 let turnFromUser = true
 let nextTurnFromUser = true
 let queued: string | undefined
+// replies of the user's turns whose spoken summary is still being written: they go first
+let composing = 0
 
-// Origins of prompts the engine sends on its own, not the user. Every other origin is the user's:
-// typed, from the phone, through the desktop app, or one the engine adds later.
+// Origins of prompts that are not the user's: the engine's own, other sessions', and a mod's
+// ($.prompt.submit, this one's `/speak ask` too). Every other origin is the user's: typed, from the
+// phone, through the desktop app, or one the engine adds later.
 const AUTOMATED: ReadonlySet<string> = new Set([
   'task-notification', 'scheduled-trigger', 'peer', 'peer-send-message', 'projects-relay', 'channel',
-  'coordinator', 'observer', 'observer-activity',
+  'coordinator', 'observer', 'observer-activity', 'plugin',
 ])
 // A reply is being read, or is held for focus: not yet read to the end, and the player is not over.
 const reading = () => !!job && job.state.phase !== 'done' && !OVER.has(job.state.phase)
@@ -217,7 +220,10 @@ const speak = async ($: EngineInterface, text: string, gate: boolean): Promise<s
   const remote = str('remote_playback', 'auto') || 'auto'
   const playsRemotely = platform === 'linux' && remote !== 'off' && (remote !== 'auto' || !!(await $.env.get('SSH_CONNECTION')))
   if (!key && !playsRemotely) return `speak: no ${engine} key. Set it under /config (speak) or export ${DEFAULTS[engine].envKey}.`
+  // a reply waiting for the reading keeps waiting, now behind this one
+  const waiting = queued
   await stop($)
+  queued = waiting
   // read here, not kept from session.start: a /clear goes on under a new id with no session.start
   const session = await $.session.id().catch(() => 'nosession')
   const now = await $.clock.now()
@@ -329,10 +335,16 @@ export const register: Register = (on, options) => {
     if (e.reason !== 'answer' || (!e.answer.trim() && !said)) return r
     if (!asked && !voice) return r
     const seq = speakSeq
-    const spoken = asked ? { text: toSpeakable(e.answer) } : said ? { text: toSpeakable(said) } : await summarize($, e.answer)
+    if (user) composing++
+    let spoken: { text: string } | { problem: string }
+    try {
+      spoken = asked ? { text: toSpeakable(e.answer) } : said ? { text: toSpeakable(said) } : await summarize($, e.answer)
+    } finally {
+      if (user) composing--
+    }
     // while the summary was written: the user's prompt or turn, /speak stop, or /speak off
     if (seq !== speakSeq || (!asked && !voice)) return r
-    if (!asked && !user && reading() && 'text' in spoken && spoken.text) {
+    if (!asked && !user && (reading() || composing > 0) && 'text' in spoken && spoken.text) {
       queued = spoken.text
       return r
     }
