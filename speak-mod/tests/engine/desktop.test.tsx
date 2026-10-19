@@ -137,6 +137,27 @@ test('the band draws its controls on the terminal and in the desktop app', async
   }
 })
 
+test('the terminal band keeps to one row: only the bar gets shorter', async ($, on) => {
+  const { player, clock } = machine(on)
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.complete(turn('Reading this.'))
+  player.state = JSON.stringify({ phase: 'done', chunk: 0, n: 1, fraction: 1, paused: false })
+  await clock.advance(300)
+  type El = { type: string; props?: { label?: string }; children?: unknown[] }
+  const text = (el: unknown): string => (typeof el === 'string' ? el : ((el as El).children ?? []).map(text).join(''))
+  // The mark and "«" may draw two cells wide; a Button draws as "[ label ]"; one cell between items.
+  const cells = (s: string) => s.length + (s.match(/[♪«]/g)?.length ?? 0)
+  for (const bodyColumns of [100, 55, 40]) {
+    const ui = await $.ui.mount({ plugin: 'speak', surface: 'terminal', component: 'AbovePrompt', props: { ...BAND, bodyColumns } })
+    const [mark, status, bar, ...buttons] = ((await ui.drawn()) as El).children as El[]
+    expect(buttons.length).toBe(3)
+    const row = cells(text(mark)) + 1 + cells(text(status)) + 1 + cells(text(bar))
+      + buttons.reduce((w, b) => w + 1 + cells(String(b.props?.label)) + 4, 0)
+    expect(row).toBeLessThanOrEqual(bodyColumns)
+  }
+})
+
 test('desktop: the band reads like the app, from speaking through paused to read', async ($, on) => {
   const { clock, player } = machine(on)
   await $.command.run({ command: 'speak', args: 'on' })
