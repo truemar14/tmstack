@@ -29,6 +29,9 @@ function statusOf(job: Job): string {
   }
 }
 
+// Cells a string takes, counting the characters some terminals draw two cells wide.
+const cells = (text: string) => text.length + (text.match(/[♪«]/g)?.length ?? 0)
+
 // The terminal's band: text marks sized to the terminal's columns.
 export function bandTree(el: Elements['terminal'], job: Job, columns: number, on: BandActions): RenderElement {
   const { Box, Text, Button } = el
@@ -49,10 +52,12 @@ export function bandTree(el: Elements['terminal'], job: Job, columns: number, on
           <Button key="speak:close" label="close" dimColor onPress={on.close} />,
         ]
       : [<Button key="speak:close" label="close" dimColor onPress={on.close} />]
-  // The progress line takes what the status and the controls leave: "♪ " + status + gaps + buttons
-  // (each label plus two cells of chrome) + a little slack.
-  const controlCells = controls.reduce((w, b) => w + String((b as { props?: { label?: string } }).props?.label ?? '').length + 3, 0)
-  const width = Math.max(8, Math.min(40, columns - status.length - controlCells - 8))
+  // The progress line takes what the rest of the row leaves, so the row never wraps: the mark, the
+  // status, and each button as "[ label ]", with one cell between items. The mark and "«" count two
+  // cells, as some terminals draw them; in a narrow column the bar shrinks to nothing first.
+  const labels = controls.map(b => String((b as { props?: { label?: string } }).props?.label ?? ''))
+  const rest = cells('♪') + 1 + cells(status) + 1 + labels.reduce((w, l) => w + 1 + cells(l) + 4, 0)
+  const width = Math.max(0, Math.min(40, columns - rest))
   const filled = Math.round(Math.max(0, Math.min(1, phase === 'done' ? 1 : fraction)) * width)
   return (
     <Box flexDirection="row" alignItems="center" columnGap={1}>
