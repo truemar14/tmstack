@@ -175,8 +175,10 @@ function Stop-Playing { Exit-Playing; Remove-Item $readyFlag -ErrorAction Silent
 $duckLevel = 1 / 12
 $duckFile = Join-Path $env:TEMP 'claude-speak.duck.json'
 $mediaFile = Join-Path $env:TEMP 'claude-speak.media.json'
-# Loaded also with media off when volumes are saved, so this player can restore what a dead one ducked.
-if ($script:winrt -and ($media -ne 'off' -or (Test-Path $duckFile))) {
+# Compiles the mixer helper once per player, on first need: before a duck, and before restoring
+# volumes this or another player saved, whatever the mode.
+function Use-Mixer {
+  if ('SpeakAudio.Mixer' -as [type]) { return }
   try {
     Add-Type -TypeDefinition @'
 using System;
@@ -253,6 +255,7 @@ namespace SpeakAudio {
 '@
   } catch { Log "mixer unavailable: $($_.Exception.Message)" }
 }
+if ($script:winrt -and $media -ne 'off') { Use-Mixer }
 # Fades the saved volumes from one share of themselves to another over about a third of a second.
 function Fade-Volumes($volumes, [double]$from, [double]$to) {
   for ($k = 1; $k -le 8; $k++) {
@@ -334,6 +337,7 @@ function Resume-Media {
   if (Test-Path $duckFile) {
     # The file goes only once the volumes are back: a failed restore leaves it for the next player.
     try {
+      Use-Mixer
       $volumes = Read-Duck; Fade-Volumes $volumes $duckLevel 1; Log "restored: $($volumes.Keys -join ', ')"
       Remove-Item $duckFile -ErrorAction SilentlyContinue
     } catch { Log "restore failed, volumes kept in $($duckFile): $($_.Exception.Message)" }
@@ -465,7 +469,9 @@ function Play-Round([int]$first = 0, [double]$firstAt = 0) {
     $script:lens[$i] = $len; $done += $chunks[$i].Length
     Log "played $i ($([int]$len) ms)"
   }
-  if ($started) { Resume-Media }
+  # Also when this player never spoke: a stop while it waited for its turn still has to give back
+  # the audio the player before it left down for it.
+  Resume-Media
   Stop-Playing
   if ($failed -eq $n) { Set-Phase 'error' "$engine request failed (see claude-speak-mod.log)"; return 'stopped' }
   return $status
