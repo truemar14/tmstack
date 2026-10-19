@@ -20,11 +20,18 @@ the user's answers before the next round.
 
 Ask in plain numbered text, never through a question-picker tool. A picker
 pushes the user toward a predefined answer, and the point of a round is the
-context they add in their own words. Format each question like so:
+context they add in their own words. Format a round like so, with a
+horizontal rule between questions so each one reads on its own:
 
 ```
 **Q1. <question title>**
 <question body, possibly several paragraphs, including options when they help>
+Recommended: <your recommended answer>
+
+---
+
+**Q2. <question title>**
+<question body>
 Recommended: <your recommended answer>
 ```
 
