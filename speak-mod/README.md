@@ -31,8 +31,10 @@ shelled out around it. Codex has no function hooks and no voice mode.
 - A band above the prompt shows what is being read with a progress line and
   buttons: back 5 s, pause, stop; after the reply, replay (kept
   20 minutes) and close.
-- A new prompt or a `/clear` stops this session's reading, and `/clear` turns
-  voice mode off like any new session. Inside [Herdr](https://herdr.dev),
+- Your own prompt or a `/clear` stops this session's reading, and `/clear`
+  turns voice mode off like any new session. A message from another session or
+  a background task does not stop it. The reply such a message leads to is read
+  after the current reading ends. Inside [Herdr](https://herdr.dev),
   a terminal workspace for agent sessions, a reply from a session that is not
   the focused pane is held until you switch to it. Voices
   never overlap across sessions. On Windows, media apps that were playing are

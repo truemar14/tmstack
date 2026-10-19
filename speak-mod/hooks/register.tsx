@@ -55,9 +55,24 @@ let voice = false
 let askTurnId: string | undefined
 // this turn's wrap_up recap and question, when it called RECAP_TOOL
 let recap: string | undefined
-// bumped by every stop (a new prompt, /speak stop, a new reading) and every turn start, so a summary
-// that comes back after one of them is dropped
+// bumped by every stop (the user's prompt, /speak stop, a new reading) and every turn the user
+// starts, so a summary that comes back after one of them is dropped
 let speakSeq = 0
+// Whether the user started the running turn, and the next one. A turn an automated prompt started
+// (another session's message, a background task's notification) reads its reply only after the
+// current reading ends: it waits in `queued`, the newest such reply replacing an older one.
+let turnFromUser = true
+let nextTurnFromUser = true
+let queued: string | undefined
+
+// Origins of prompts the engine sends on its own, not the user. Every other origin is the user's:
+// typed, from the phone, through the desktop app, or one the engine adds later.
+const AUTOMATED: ReadonlySet<string> = new Set([
+  'task-notification', 'scheduled-trigger', 'peer', 'peer-send-message', 'projects-relay', 'channel',
+  'coordinator', 'observer', 'observer-activity',
+])
+// A reply is being read, or is held for focus: not yet read to the end, and the player is not over.
+const reading = () => !!job && job.state.phase !== 'done' && !OVER.has(job.state.phase)
 
 const str = (key: string, fallback: string) => (typeof opts[key] === 'string' ? (opts[key] as string) : fallback)
 const num = (key: string, fallback: number) => (typeof opts[key] === 'number' ? (opts[key] as number) : fallback)
@@ -150,6 +165,7 @@ const clearJob = ($: EngineInterface) => {
 // Stops the current reply's playback (if any) and drops the band.
 const stop = async ($: EngineInterface) => {
   speakSeq++
+  queued = undefined
   if (!job) return
   if (!OVER.has(job.state.phase)) await sendCommand($, job.base, 'stop').catch(() => undefined)
   clearJob($)
@@ -167,8 +183,16 @@ const watch = ($: EngineInterface, base: string) => {
     if (key === last) return
     last = key
     job.state = state
+    if (state.phase === 'error') $.ui.toast(`speak: ${state.message ?? 'voice failed'}`, { timeoutMs: 8000 })
+    if (queued && (state.phase === 'done' || OVER.has(state.phase))) {
+      // the reading ended: the reply that waited for it goes next, through a fresh player
+      const text = queued
+      queued = undefined
+      const problem = await speak($, text, true)
+      if (problem) $.ui.toast(problem, { timeoutMs: 8000 })
+      return
+    }
     if (OVER.has(state.phase)) {
-      if (state.phase === 'error') $.ui.toast(`speak: ${state.message ?? 'voice failed'}`, { timeoutMs: 8000 })
       clearJob($)
       return
     }
@@ -248,9 +272,14 @@ export const register: Register = (on, options) => {
     return r
   })
 
-  // A new prompt interrupts this session's reading. The model is never told about the voice.
+  // The user's prompt interrupts this session's reading; an automated one never does. A prompt that
+  // starts a turn marks who started it, and the user's prompt typed into a running turn makes that
+  // turn the user's. The model is never told about the voice.
   on('prompt.submit', async ($, e, next) => {
-    await stop($)
+    const user = !e.isMeta && !AUTOMATED.has(e.origin?.kind ?? '')
+    if (user) await stop($)
+    if (!e.turnId) nextTurnFromUser = user
+    else if (user) turnFromUser = true
     return next(e)
   })
 
@@ -268,7 +297,9 @@ export const register: Register = (on, options) => {
   // being written is dropped, and the turn is marked when `/speak ask`'s prompt started it. Marking
   // here, not at prompt.submit, keeps an ask sent mid-turn off the turn that was running.
   on('turn.start', async ($, e, next) => {
-    speakSeq++
+    turnFromUser = nextTurnFromUser
+    nextTurnFromUser = true
+    if (turnFromUser) speakSeq++
     recap = undefined
     askTurnId = e.text.endsWith(COMPOSE_SUFFIX) ? e.turnId : undefined
     return next(e)
@@ -284,10 +315,12 @@ export const register: Register = (on, options) => {
   })
 
   // Reads the main loop's answer: `/speak ask`'s word for word, else in voice mode the wrap_up
-  // recap or the reply's summary. Both marks are spent here whatever the turn's outcome.
+  // recap or the reply's summary. Both marks are spent here whatever the turn's outcome. The answer
+  // of a turn the user did not start waits while another reply is being read.
   on('turn.complete', async ($, e, next) => {
     const r = await next(e)
     if (e.agentId) return r
+    const user = turnFromUser
     const said = recap
     const asked = e.turnId === askTurnId
     recap = undefined
@@ -297,8 +330,12 @@ export const register: Register = (on, options) => {
     if (!asked && !voice) return r
     const seq = speakSeq
     const spoken = asked ? { text: toSpeakable(e.answer) } : said ? { text: toSpeakable(said) } : await summarize($, e.answer)
-    // while the summary was written: a new prompt or turn, /speak stop, or /speak off
+    // while the summary was written: the user's prompt or turn, /speak stop, or /speak off
     if (seq !== speakSeq || (!asked && !voice)) return r
+    if (!asked && !user && reading() && 'text' in spoken && spoken.text) {
+      queued = spoken.text
+      return r
+    }
     const problem = 'problem' in spoken ? spoken.problem : spoken.text ? await speak($, spoken.text, true) : undefined
     if (problem) $.ui.toast(problem, { timeoutMs: 8000 })
     return r

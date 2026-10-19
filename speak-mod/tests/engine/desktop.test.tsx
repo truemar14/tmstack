@@ -1,7 +1,7 @@
 /* @jsx h */
 // Engine tests, run with `claude plugin test speak-mod` (the pure tests in tests/ run under node):
 // what voice mode reads (the wrap_up recap, a short reply, a Haiku summary), `/speak ask`, what a
-// /clear ends, and the band on both surfaces.
+// /clear ends, what stops a reading and what waits for it, and the band on both surfaces.
 import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
@@ -126,6 +126,38 @@ test('/speak ask reads its own turn only: not one running when it was sent, not 
   await $.turn.start({ text: asked, turnId: 't4' })
   await $.turn.complete(turn(LONG, 't4'))
   expect(jobs.at(-1)?.chunks.join(' ')).toBe(LONG.trim())
+})
+
+test('only the user stops a reading: a message from another session or a background task does not', async ($, on) => {
+  const { jobs } = machine(on)
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.complete(turn('Reading this.'))
+  expect(jobs.length).toBe(1)
+  const status = async () => (await $.command.run({ command: 'speak', args: 'status' })).text
+  await $.prompt.submit({ ...submit, origin: { kind: 'peer' as const } })
+  await $.prompt.submit({ ...submit, origin: { kind: 'task-notification' as const } })
+  expect(await status()).not.toContain('idle')
+  await $.prompt.submit(submit)
+  expect(await status()).toContain('idle')
+})
+
+test('a reply from a turn the user did not start waits for the reading, then is read', async ($, on) => {
+  const { jobs, player, clock } = machine(on)
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.start({ text: 'hi', turnId: 't1' })
+  await $.turn.complete(turn('The answer to the user.', 't1'))
+  player.state = JSON.stringify({ phase: 'playing', chunk: 0, n: 1, fraction: 0.4, paused: false })
+  await clock.advance(300)
+  await $.prompt.submit({ ...submit, text: 'a report', origin: { kind: 'peer' as const } })
+  await $.turn.start({ text: 'a report', turnId: 't2' })
+  await $.turn.complete(turn('What the report changed.', 't2'))
+  expect(jobs.length).toBe(1)
+  player.state = JSON.stringify({ phase: 'done', chunk: 0, n: 1, fraction: 1, paused: false })
+  await clock.advance(300)
+  expect(jobs.length).toBe(2)
+  expect(jobs[1]?.chunks.join(' ')).toBe('What the report changed.')
 })
 
 test('a /clear stops the reading and turns voice mode off', async ($, on) => {
