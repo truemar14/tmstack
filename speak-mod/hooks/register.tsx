@@ -381,6 +381,7 @@ export const register: Register = (on, options) => {
       case 'on':
       case 'off':
         voice = cmd.kind === 'on'
+        if (!voice) queued = undefined   // a reply waiting for the reading is not read either
         return { text: voice ? 'Replies will be read aloud in this session.' : 'Replies will not be read aloud (until /speak on).' }
       case 'engine': {
         if (!cmd.name) return { text: `voice engine: ${await currentEngine($)} (${ENGINES.join(' | ')})` }

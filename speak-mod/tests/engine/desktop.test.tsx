@@ -160,6 +160,23 @@ test('a reply from a turn the user did not start waits for the reading, then is 
   expect(jobs[1]?.chunks.join(' ')).toBe('What the report changed.')
 })
 
+test('/speak off drops a reply that waits for the reading', async ($, on) => {
+  const { jobs, player, clock } = machine(on)
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.start({ text: 'hi', turnId: 't1' })
+  await $.turn.complete(turn('The answer to the user.', 't1'))
+  player.state = JSON.stringify({ phase: 'playing', chunk: 0, n: 1, fraction: 0.4, paused: false })
+  await clock.advance(300)
+  await $.prompt.submit({ ...submit, text: 'a report', origin: { kind: 'peer' as const } })
+  await $.turn.start({ text: 'a report', turnId: 't2' })
+  await $.turn.complete(turn('What the report changed.', 't2'))
+  await $.command.run({ command: 'speak', args: 'off' })
+  player.state = JSON.stringify({ phase: 'done', chunk: 0, n: 1, fraction: 1, paused: false })
+  await clock.advance(300)
+  expect(jobs.length).toBe(1)
+})
+
 test('a /clear stops the reading and turns voice mode off', async ($, on) => {
   const { jobs, ids } = machine(on)
   await $.command.run({ command: 'speak', args: 'on' })
