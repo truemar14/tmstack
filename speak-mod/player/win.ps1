@@ -14,7 +14,7 @@
 # generates at ~4x realtime, so the first short clip plays after ~3 s). In gated mode the reply is
 # held silently until its session is the focused Herdr pane (dropped after 15 min). Players take
 # turns across sessions through a lock, so voices never overlap. Before the first clip other audio is
-# faded down to a tenth (media "duck") or faded out and paused ("pause"), and the last player to finish
+# faded down to a twelfth (media "duck") or faded out and paused ("pause"), and the last player to finish
 # brings it back. After the reply the clips
 # are kept 20 min for a replay ("replay", or "back" for the last 5 s), then everything is deleted.
 # Log: %TEMP%\claude-speak-mod.log
@@ -172,7 +172,7 @@ function Stop-Playing { Exit-Playing; Remove-Item $readyFlag -ErrorAction Silent
 # play/pause), and resumed before the fade back up. The volumes as they were, by process id, and the
 # paused apps' ids are kept in files, so the podcast does not blip back on between two replies and a
 # player that died mid-reply is repaired by the next one.
-$duckLevel = 0.1
+$duckLevel = 1 / 12
 $duckFile = Join-Path $env:TEMP 'claude-speak.duck.json'
 $mediaFile = Join-Path $env:TEMP 'claude-speak.media.json'
 if ($script:winrt -and $media -ne 'off') {

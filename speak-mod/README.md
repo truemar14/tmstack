@@ -34,7 +34,7 @@ shelled out around it. Codex has no function hooks and no voice mode.
 - A new prompt stops this session's reading. Inside [Herdr](https://herdr.dev),
   a terminal workspace for agent sessions, a reply from a session that is not
   the focused pane is held until you switch to it. Voices
-  never overlap across sessions. On Windows, other audio fades down to a tenth
+  never overlap across sessions. On Windows, other audio fades down to a twelfth
   under the voice and back up after it. The `media` setting can instead fade
   media apps out and pause them (`pause`), or leave audio alone (`off`).
 
