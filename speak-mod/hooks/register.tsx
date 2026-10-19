@@ -14,7 +14,7 @@
 //
 // Layout note: the engine follows `$` only into functions declared at the top of this file, so the
 // state is module-level and every helper that takes `$` is a top-level const.
-import type { EngineInterface, PluginOptions, Register } from 'claude-code'
+import type { EngineInterface, PluginOptions, PromptOrigin, Register } from 'claude-code'
 import { HELP, parseArgs } from './args.ts'
 import { bandTree, desktopBandTree } from './band.tsx'
 import {
@@ -45,19 +45,32 @@ let opts: PluginOptions = {}
 let platform: Platform = 'win32'
 let root = ''
 let tmp = ''
-let session = ''
 let job: Job | undefined
 let poll: { cancel: () => void } | undefined
 let expiry: { cancel: () => void } | undefined
-// voice mode: off at every session start, `/speak on|off` flips it for this session only
+// voice mode: off at every session start and after a /clear; `/speak on|off` flips it for this
+// session only
 let voice = false
 // the id of the turn `/speak ask`'s prompt started: its answer is read even when voice mode is off
 let askTurnId: string | undefined
 // this turn's wrap_up recap and question, when it called RECAP_TOOL
 let recap: string | undefined
-// bumped by every stop (a new prompt, /speak stop, a new reading) and every turn start, so a summary
-// that comes back after one of them is dropped
+// bumped by every stop (the user's prompt, /speak stop, a new reading) and every turn the user
+// starts, so a summary that comes back after one of them is dropped
 let speakSeq = 0
+// Whether the user started the running turn, and the next one. The reply of a turn an automated
+// prompt started (another session's message, a background task's notification) is not read aloud;
+// `/speak` reads the last reply on demand.
+let turnFromUser = true
+let nextTurnFromUser = true
+
+// Origins of prompts that are not the user's: the engine's own, other sessions', and a mod's
+// ($.prompt.submit, this one's `/speak ask` too). Every other origin is the user's: typed, from the
+// phone, through the desktop app, or one the engine adds later.
+const AUTOMATED: ReadonlySet<string> = new Set<PromptOrigin['kind']>([
+  'task-notification', 'scheduled-trigger', 'peer', 'peer-send-message', 'projects-relay', 'channel',
+  'coordinator', 'observer', 'observer-activity', 'plugin',
+])
 
 const str = (key: string, fallback: string) => (typeof opts[key] === 'string' ? (opts[key] as string) : fallback)
 const num = (key: string, fallback: number) => (typeof opts[key] === 'number' ? (opts[key] as number) : fallback)
@@ -194,6 +207,8 @@ const speak = async ($: EngineInterface, text: string, gate: boolean): Promise<s
   const playsRemotely = platform === 'linux' && remote !== 'off' && (remote !== 'auto' || !!(await $.env.get('SSH_CONNECTION')))
   if (!key && !playsRemotely) return `speak: no ${engine} key. Set it under /config (speak) or export ${DEFAULTS[engine].envKey}.`
   await stop($)
+  // read here, not kept from session.start: a /clear goes on under a new id with no session.start
+  const session = await $.session.id().catch(() => 'nosession')
   const now = await $.clock.now()
   const base = `${tmp}/claude-speak-${session.slice(0, 8)}-${now}`
   job = { base, n: chunks.length, startedAt: now, state: starting(chunks.length) }
@@ -236,7 +251,6 @@ export const register: Register = (on, options) => {
     platform = (await $.env.get('OS')) === 'Windows_NT' ? 'win32' : 'linux'
     root = pluginRoot((import.meta as { url?: string }).url ?? '')
     tmp = tempDirOf(platform, await $.env.get('TEMP'), await $.env.get('XDG_RUNTIME_DIR'))
-    session = await $.session.id().catch(() => 'nosession')
     await writeLauncher($).catch(err => $.ui.log(`speak: launcher not written: ${err}`))
     await $.command.register({
       name: 'speak',
@@ -247,17 +261,36 @@ export const register: Register = (on, options) => {
     return r
   })
 
-  // A new prompt interrupts this session's reading. The model is never told about the voice.
+  // The user's prompt interrupts this session's reading; an automated one never does. A prompt that
+  // starts a turn marks who started it, and the user's prompt typed into a running turn makes that
+  // turn the user's. The model is never told about the voice.
   on('prompt.submit', async ($, e, next) => {
-    await stop($)
+    const user = !e.isMeta && !AUTOMATED.has(e.origin?.kind ?? '')
+    if (user) await stop($)
+    if (!e.turnId) nextTurnFromUser = user
+    else if (user) turnFromUser = true
     return next(e)
   })
 
-  // A main-loop turn starts (a subagent's raises none): the last turn's recap goes, a summary still
-  // being written is dropped, and the turn is marked when `/speak ask`'s prompt started it. Marking
-  // here, not at prompt.submit, keeps an ask sent mid-turn off the turn that was running.
+  // A clear (typed /clear or the desktop app's) ends this session and goes on under a new id with
+  // no session.start: the reading and its band go, and voice mode is off again, as at every start.
+  on('session.end', async ($, e, next) => {
+    if (e.reason === 'clear') {
+      voice = false
+      await stop($)
+    }
+    return next(e)
+  })
+
+  // A main-loop turn starts: who started it is settled, the last turn's recap goes, a summary still
+  // being written is dropped when the user started it, and the turn is marked when `/speak ask`'s
+  // prompt started it. Marking here, not at prompt.submit, keeps an ask sent mid-turn off the turn
+  // that was running. A subagent's turn raises this too, and changes none of it.
   on('turn.start', async ($, e, next) => {
-    speakSeq++
+    if (e.agentId) return next(e)
+    turnFromUser = nextTurnFromUser
+    nextTurnFromUser = true
+    if (turnFromUser) speakSeq++
     recap = undefined
     askTurnId = e.text.endsWith(COMPOSE_SUFFIX) ? e.turnId : undefined
     return next(e)
@@ -273,20 +306,22 @@ export const register: Register = (on, options) => {
   })
 
   // Reads the main loop's answer: `/speak ask`'s word for word, else in voice mode the wrap_up
-  // recap or the reply's summary. Both marks are spent here whatever the turn's outcome.
+  // recap or the reply's summary. Both marks are spent here whatever the turn's outcome. The answer
+  // of a turn the user did not start is not read.
   on('turn.complete', async ($, e, next) => {
     const r = await next(e)
     if (e.agentId) return r
+    const user = turnFromUser
     const said = recap
     const asked = e.turnId === askTurnId
     recap = undefined
     askTurnId = undefined
     // a wrap_up whose question ends the turn leaves no text after it, so an empty answer counts then
     if (e.reason !== 'answer' || (!e.answer.trim() && !said)) return r
-    if (!asked && !voice) return r
+    if (!asked && (!voice || !user)) return r
     const seq = speakSeq
     const spoken = asked ? { text: toSpeakable(e.answer) } : said ? { text: toSpeakable(said) } : await summarize($, e.answer)
-    // while the summary was written: a new prompt or turn, /speak stop, or /speak off
+    // while the summary was written: the user's prompt or turn, /speak stop, or /speak off
     if (seq !== speakSeq || (!asked && !voice)) return r
     const problem = 'problem' in spoken ? spoken.problem : spoken.text ? await speak($, spoken.text, true) : undefined
     if (problem) $.ui.toast(problem, { timeoutMs: 8000 })

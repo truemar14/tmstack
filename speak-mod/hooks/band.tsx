@@ -19,7 +19,7 @@ function statusOf(job: Job): string {
   const pos = n > 1 ? ` ${Math.min(chunk + 1, n)}/${n}` : ''
   switch (phase) {
     case 'starting': return 'starting voice'
-    case 'held': return 'waiting for this pane to be focused'
+    case 'held': return 'waiting for focus'
     case 'fetching': return `fetching voice${pos}`
     case 'playing': return paused ? `paused${pos}` : `speaking${pos}`
     case 'done': return 'read'

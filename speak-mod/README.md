@@ -31,7 +31,10 @@ shelled out around it. Codex has no function hooks and no voice mode.
 - A band above the prompt shows what is being read with a progress line and
   buttons: back 5 s, pause, stop; after the reply, replay (kept
   20 minutes) and close.
-- A new prompt stops this session's reading. Inside [Herdr](https://herdr.dev),
+- Your own prompt or a `/clear` stops this session's reading, and `/clear`
+  turns voice mode off like any new session. A message from another session or
+  a background task does not stop it, and the reply it leads to is not read
+  aloud; `/speak` reads the last reply when you want it. Inside [Herdr](https://herdr.dev),
   a terminal workspace for agent sessions, a reply from a session that is not
   the focused pane is held until you switch to it. Voices
   never overlap across sessions. On Windows, other audio fades down to a twelfth
@@ -43,7 +46,7 @@ shelled out around it. Codex has no function hooks and no voice mode.
 | Path | Role |
 |---|---|
 | `.claude-plugin/plugin.json` | Manifest and `userConfig` (engine; per-engine API key in secure storage, voice and model; speed, focus gate, what happens to other audio). |
-| `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `tool.call` for the desktop recap, `turn.complete` with the Haiku summary, `command.run` for `/speak`, `ui.render` for the band. |
+| `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `tool.call` for the desktop recap, `turn.complete` with the Haiku summary, `command.run` for `/speak`, `session.end` for `/clear`, `ui.render` for the band. |
 | `hooks/speakable.ts` | Markdown to spoken text, clip splitting. |
 | `hooks/args.ts` | `/speak` argument parsing. |
 | `hooks/protocol.ts` | The file protocol with the player and the pure helpers around it. |
@@ -91,7 +94,8 @@ environment variable, never on disk.
 Develop with `claude --plugin-dir speak-mod` (`--debug` names what the engine
 refused); `claude plugin validate speak-mod` shows what the module hooks and
 calls; `npx -p typescript tsc -p speak-mod/tsconfig.json` typechecks against
-the declarations `/plugin-types` writes into `speak-mod/.claude/types`.
+the declarations Claude Code writes into `speak-mod/.claude-plugin/types` each
+time a session loads the mod. Load it once after a Claude Code update.
 
 ## Playing on the machine you connected from
 

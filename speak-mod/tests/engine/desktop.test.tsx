@@ -1,14 +1,14 @@
 /* @jsx h */
 // Engine tests, run with `claude plugin test speak-mod` (the pure tests in tests/ run under node):
-// what voice mode reads (the wrap_up recap, a short reply, a Haiku summary), `/speak ask`, and the
-// band on both surfaces.
+// what voice mode reads (the wrap_up recap, a short reply, a Haiku summary), `/speak ask`, what a
+// /clear ends, what stops a reading and what waits for it, and the band on both surfaces.
 import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-type JobFile = { chunks: string[] }
+type JobFile = { chunks: string[]; session: string }
 type Summary = { isAnswered: true; text: string } | { isAnswered: false; reason: 'empty-reply' }
 
-// Stands in for the machine beneath the mod: a key, a session, a player that starts, and a
+// Stands in for the machine beneath the mod: a key, a session (`ids.current`, its id), a player that starts, and a
 // summarizer. `jobs` are the job files the mod writes, one per reply it hands to the
 // player; `player.state` is what the player's state file holds, read on the band's next poll;
 // `summaries` are the prompts the mod sent to the summary model, and `model.reply` what it answers;
@@ -19,6 +19,7 @@ function machine(on: On) {
   const prompts: string[] = []
   const toasts: string[] = []
   const player = { state: '' }
+  const ids = { current: 'session-1' }
   const model = { reply: (): Promise<Summary> => Promise.resolve({ isAnswered: true, text: 'I fixed the bug.' }) }
   mock.env(on, { HOME: '/home/u', XDG_RUNTIME_DIR: '/run/u', FISH_API_KEY: 'key' })
   mock.store(on, {})
@@ -29,7 +30,8 @@ function machine(on: On) {
   })
   on('ui.toast', (_$, e) => (toasts.push(e.text), Promise.resolve({ value: undefined })))
   const clock = mock.clock(on, { now: 1000 })
-  on('session.id', () => Promise.resolve({ value: 'session-1' }))
+  on('session.id', () => Promise.resolve({ value: ids.current }))
+  on('session.end', (_$, e) => Promise.resolve({ sessionId: e.sessionId }))
   on('fs.write', (_$, e) => {
     if (e.path.endsWith('.json')) jobs.push(JSON.parse(e.text) as JobFile)
     return Promise.resolve({ value: undefined })
@@ -39,7 +41,7 @@ function machine(on: On) {
   on('prompt.submit', (_$, e) => (prompts.push(e.text), Promise.resolve({ text: e.text, context: e.context })))
   on('turn.start', (_$, e) => Promise.resolve({ turnId: e.turnId }))
   on('turn.complete', (_$, e) => Promise.resolve({ text: e.answer }))
-  return { jobs, summaries, prompts, toasts, model, clock, player }
+  return { jobs, summaries, prompts, toasts, model, clock, player, ids }
 }
 
 const turn = (answer: string, turnId = 't1') => ({ answer, reason: 'answer' as const, durationMs: 1, isAborted: false, turnId })
@@ -126,6 +128,94 @@ test('/speak ask reads its own turn only: not one running when it was sent, not 
   expect(jobs.at(-1)?.chunks.join(' ')).toBe(LONG.trim())
 })
 
+test('only the user stops a reading: a message from another session or a background task does not', async ($, on) => {
+  const { jobs } = machine(on)
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.complete(turn('Reading this.'))
+  expect(jobs.length).toBe(1)
+  const status = async () => (await $.command.run({ command: 'speak', args: 'status' })).text
+  await $.prompt.submit({ ...submit, origin: { kind: 'peer' as const } })
+  await $.prompt.submit({ ...submit, origin: { kind: 'task-notification' as const } })
+  await $.prompt.submit({ ...submit, origin: { kind: 'plugin' as const, name: 'other-mod' } })
+  expect(await status()).not.toContain('idle')
+  await $.prompt.submit(submit)
+  expect(await status()).toContain('idle')
+})
+
+test('a reply from a turn the user did not start is not read, even when that turn starts a subagent', async ($, on) => {
+  const { jobs, summaries } = machine(on)
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.start({ text: 'hi', turnId: 't1' })
+  await $.turn.complete(turn('The answer to the user.', 't1'))
+  expect(jobs.length).toBe(1)
+  await $.prompt.submit({ ...submit, text: 'a report', origin: { kind: 'peer' as const } })
+  await $.turn.start({ text: 'a report', turnId: 't2' })
+  await $.turn.start({ text: 'look into it', turnId: 'a1', agentId: 'agent-1' })
+  await $.turn.complete(turn(LONG, 't2'))
+  expect(jobs.length).toBe(1)
+  expect(summaries.length).toBe(0)
+  await $.prompt.submit(submit)
+  await $.turn.start({ text: 'hi', turnId: 't3' })
+  await $.turn.start({ text: 'look into it', turnId: 'a2', agentId: 'agent-2' })
+  await $.turn.complete(turn('The next answer.', 't3'))
+  expect(jobs.at(-1)?.chunks.join(' ')).toBe('The next answer.')
+})
+
+test("the user typing into a running automated turn makes that turn the user's, so its reply is read", async ($, on) => {
+  const { jobs } = machine(on)
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit({ ...submit, text: 'a report', origin: { kind: 'peer' as const } })
+  await $.turn.start({ text: 'a report', turnId: 't1' })
+  await $.prompt.submit({ ...submit, turnId: 't1' })
+  await $.turn.complete(turn('Now the user is in it.', 't1'))
+  expect(jobs.map(j => j.chunks.join(' '))).toEqual(['Now the user is in it.'])
+})
+
+test("an automated turn does not drop the user's summary still being written", async ($, on) => {
+  const { jobs, model } = machine(on)
+  let release = () => {}
+  let asked = () => {}
+  const summaryAsked = new Promise<void>(done => { asked = done })
+  model.reply = () => new Promise(done => { release = () => done({ isAnswered: true, text: 'The user summary.' }); asked() })
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.start({ text: 'hi', turnId: 't1' })
+  const reading = $.turn.complete(turn(LONG, 't1'))
+  await summaryAsked
+  await $.prompt.submit({ ...submit, text: 'a report', origin: { kind: 'task-notification' as const } })
+  await $.turn.start({ text: 'a report', turnId: 't2' })
+  await $.turn.start({ text: 'look into it', turnId: 'a1', agentId: 'agent-1' })
+  await $.turn.complete(turn('The report.', 't2'))
+  release()
+  await reading
+  expect(jobs.map(j => j.chunks.join(' '))).toEqual(['The user summary.'])
+})
+
+test('a /clear stops the reading and turns voice mode off', async ($, on) => {
+  const { jobs, ids } = machine(on)
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.complete(turn('Reading this.'))
+  expect(jobs.length).toBe(1)
+  await $.session.end({ reason: 'clear', sessionId: ids.current, resume: { id: ids.current } })
+  expect((await $.command.run({ command: 'speak', args: 'status' })).text).toContain('idle')
+  await $.prompt.submit(submit)
+  await $.turn.complete(turn('Not read.', 't2'))
+  expect(jobs.length).toBe(1)
+})
+
+test('after a /clear the player gets the new session id, so the focus gate still knows it', async ($, on) => {
+  const { jobs, ids } = machine(on)
+  await $.session.end({ reason: 'clear', sessionId: ids.current, resume: { id: ids.current } })
+  ids.current = 'session-2'
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.complete(turn('Reading this.'))
+  expect(jobs[0]?.session).toBe('session-2')
+})
+
 test('the band draws its controls on the terminal and in the desktop app', async ($, on) => {
   machine(on)
   await $.command.run({ command: 'speak', args: 'on' })
@@ -142,19 +232,22 @@ test('the terminal band keeps to one row: only the bar gets shorter', async ($, 
   await $.command.run({ command: 'speak', args: 'on' })
   await $.prompt.submit(submit)
   await $.turn.complete(turn('Reading this.'))
-  player.state = JSON.stringify({ phase: 'done', chunk: 0, n: 1, fraction: 1, paused: false })
-  await clock.advance(300)
   type El = { type: string; props?: { label?: string }; children?: unknown[] }
   const text = (el: unknown): string => (typeof el === 'string' ? el : ((el as El).children ?? []).map(text).join(''))
   // The mark and "«" may draw two cells wide; a Button draws as "[ label ]"; one cell between items.
   const cells = (s: string) => s.length + (s.match(/[♪«]/g)?.length ?? 0)
-  for (const bodyColumns of [100, 55, 40]) {
-    const ui = await $.ui.mount({ plugin: 'speak', surface: 'terminal', component: 'AbovePrompt', props: { ...BAND, bodyColumns } })
-    const [mark, status, bar, ...buttons] = ((await ui.drawn()) as El).children as El[]
-    expect(buttons.length).toBe(3)
-    const row = cells(text(mark)) + 1 + cells(text(status)) + 1 + cells(text(bar))
-      + buttons.reduce((w, b) => w + 1 + cells(String(b.props?.label)) + 4, 0)
-    expect(row).toBeLessThanOrEqual(bodyColumns)
+  // read, and waiting for focus, a long status with the live controls, down to a narrow pane
+  for (const [phase, widths] of [['done', [100, 55, 40]], ['held', [100, 55]]] as const) {
+    player.state = JSON.stringify({ phase, chunk: 0, n: 1, fraction: phase === 'done' ? 1 : 0, paused: false })
+    await clock.advance(300)
+    for (const bodyColumns of widths) {
+      const ui = await $.ui.mount({ plugin: 'speak', surface: 'terminal', component: 'AbovePrompt', props: { ...BAND, bodyColumns } })
+      const [mark, status, bar, ...buttons] = ((await ui.drawn()) as El).children as El[]
+      expect(buttons.length).toBe(3)
+      const row = cells(text(mark)) + 1 + cells(text(status)) + 1 + cells(text(bar))
+        + buttons.reduce((w, b) => w + 1 + cells(String(b.props?.label)) + 4, 0)
+      expect(row).toBeLessThanOrEqual(bodyColumns)
+    }
   }
 })
 

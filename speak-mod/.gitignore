@@ -1,2 +1,4 @@
-# written by /plugin-types; regenerate after a Claude Code update
+# the hook types Claude Code writes when a session loads the mod
+.claude-plugin/types/
+# where older Claude Code versions wrote them
 .claude/types/
