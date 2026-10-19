@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # linux.sh - Linux player for the speak mod. One detached process per reply, started by the hooks
 # module (see hooks/protocol.ts): bash linux.sh <base>.json
-# The job file { base, chunks, engine, voice, speed, model, gate, session, mediaPause, remote } is read
+# The job file { base, chunks, engine, voice, speed, model, gate, session, media, remote } is read
 # once and deleted. The engine's key comes from the environment: SPEAK_API_KEY (set by the module), else
 # FISH_API_KEY or ELEVENLABS_API_KEY, read from ~/.secrets too. Needs curl, python3 and mpv.
 #
@@ -12,7 +12,8 @@
 # Clips are fetched two ahead of the one playing; each plays in mpv over an IPC socket, which gives
 # pause/resume and ±5 s (within the clip). In gated mode the reply waits until its session is the
 # focused Herdr pane (dropped after 15 min). One voice at a time across sessions via flock. After
-# the reply the clips stay 20 min for a replay, then everything is deleted. No media pausing here.
+# the reply the clips stay 20 min for a replay, then everything is deleted. Other audio is left
+# alone here.
 # Log: $XDG_RUNTIME_DIR/claude-speak-mod.log
 # Stdio mode (--stdio, no job file): the job arrives as the first line of standard input, commands as
 # the lines after it, and every state goes out as one JSON line on standard output. This is how a
