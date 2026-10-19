@@ -36,8 +36,9 @@ the harness has GitHub tools, take the same step through those.
    it from the app, already running or started with the harness's `run`
    skill or browser tools when it has them; otherwise ask the user for the
    file. When the `file-upload` skill and its token are present, call the
-   Skill tool with `file-upload` and embed as it describes; otherwise keep the file locally and put its
-   path in the description so the user can drop it in themselves. Done: the
+   Skill tool with `file-upload` and embed as it describes; otherwise keep
+   the file locally and put its path in the description so the user can drop
+   it in themselves. Done: the
    reader can see the result without checking out the branch, the description
    says the media is pending, or the change has nothing visible to show.
 7. **Title and description.** Written by the rules below, then call the
