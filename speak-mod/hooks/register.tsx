@@ -58,14 +58,11 @@ let recap: string | undefined
 // bumped by every stop (the user's prompt, /speak stop, a new reading) and every turn the user
 // starts, so a summary that comes back after one of them is dropped
 let speakSeq = 0
-// Whether the user started the running turn, and the next one. A turn an automated prompt started
-// (another session's message, a background task's notification) reads its reply only after the
-// current reading ends: it waits in `queued`, the newest such reply replacing an older one.
+// Whether the user started the running turn, and the next one. The reply of a turn an automated
+// prompt started (another session's message, a background task's notification) is not read aloud;
+// `/speak` reads the last reply on demand.
 let turnFromUser = true
 let nextTurnFromUser = true
-let queued: string | undefined
-// replies of the user's turns whose spoken summary is still being written: they go first
-let composing = 0
 
 // Origins of prompts that are not the user's: the engine's own, other sessions', and a mod's
 // ($.prompt.submit, this one's `/speak ask` too). Every other origin is the user's: typed, from the
@@ -74,8 +71,6 @@ const AUTOMATED: ReadonlySet<string> = new Set([
   'task-notification', 'scheduled-trigger', 'peer', 'peer-send-message', 'projects-relay', 'channel',
   'coordinator', 'observer', 'observer-activity', 'plugin',
 ])
-// A reply is being read, or is held for focus: not yet read to the end, and the player is not over.
-const reading = () => !!job && job.state.phase !== 'done' && !OVER.has(job.state.phase)
 
 const str = (key: string, fallback: string) => (typeof opts[key] === 'string' ? (opts[key] as string) : fallback)
 const num = (key: string, fallback: number) => (typeof opts[key] === 'number' ? (opts[key] as number) : fallback)
@@ -168,7 +163,6 @@ const clearJob = ($: EngineInterface) => {
 // Stops the current reply's playback (if any) and drops the band.
 const stop = async ($: EngineInterface) => {
   speakSeq++
-  queued = undefined
   if (!job) return
   if (!OVER.has(job.state.phase)) await sendCommand($, job.base, 'stop').catch(() => undefined)
   clearJob($)
@@ -186,16 +180,8 @@ const watch = ($: EngineInterface, base: string) => {
     if (key === last) return
     last = key
     job.state = state
-    if (state.phase === 'error') $.ui.toast(`speak: ${state.message ?? 'voice failed'}`, { timeoutMs: 8000 })
-    if (queued && (state.phase === 'done' || OVER.has(state.phase))) {
-      // the reading ended: the reply that waited for it goes next, through a fresh player
-      const text = queued
-      queued = undefined
-      const problem = await speak($, text, true)
-      if (problem) $.ui.toast(problem, { timeoutMs: 8000 })
-      return
-    }
     if (OVER.has(state.phase)) {
+      if (state.phase === 'error') $.ui.toast(`speak: ${state.message ?? 'voice failed'}`, { timeoutMs: 8000 })
       clearJob($)
       return
     }
@@ -220,10 +206,7 @@ const speak = async ($: EngineInterface, text: string, gate: boolean): Promise<s
   const remote = str('remote_playback', 'auto') || 'auto'
   const playsRemotely = platform === 'linux' && remote !== 'off' && (remote !== 'auto' || !!(await $.env.get('SSH_CONNECTION')))
   if (!key && !playsRemotely) return `speak: no ${engine} key. Set it under /config (speak) or export ${DEFAULTS[engine].envKey}.`
-  // a reply waiting for the reading keeps waiting, now behind this one
-  const waiting = queued
   await stop($)
-  queued = waiting
   // read here, not kept from session.start: a /clear goes on under a new id with no session.start
   const session = await $.session.id().catch(() => 'nosession')
   const now = await $.clock.now()
@@ -299,10 +282,12 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  // A main-loop turn starts (a subagent's raises none): the last turn's recap goes, a summary still
-  // being written is dropped, and the turn is marked when `/speak ask`'s prompt started it. Marking
-  // here, not at prompt.submit, keeps an ask sent mid-turn off the turn that was running.
+  // A main-loop turn starts: who started it is settled, the last turn's recap goes, a summary still
+  // being written is dropped when the user started it, and the turn is marked when `/speak ask`'s
+  // prompt started it. Marking here, not at prompt.submit, keeps an ask sent mid-turn off the turn
+  // that was running. A subagent's turn raises this too, and changes none of it.
   on('turn.start', async ($, e, next) => {
+    if (e.agentId) return next(e)
     turnFromUser = nextTurnFromUser
     nextTurnFromUser = true
     if (turnFromUser) speakSeq++
@@ -322,7 +307,7 @@ export const register: Register = (on, options) => {
 
   // Reads the main loop's answer: `/speak ask`'s word for word, else in voice mode the wrap_up
   // recap or the reply's summary. Both marks are spent here whatever the turn's outcome. The answer
-  // of a turn the user did not start waits while another reply is being read.
+  // of a turn the user did not start is not read.
   on('turn.complete', async ($, e, next) => {
     const r = await next(e)
     if (e.agentId) return r
@@ -333,21 +318,11 @@ export const register: Register = (on, options) => {
     askTurnId = undefined
     // a wrap_up whose question ends the turn leaves no text after it, so an empty answer counts then
     if (e.reason !== 'answer' || (!e.answer.trim() && !said)) return r
-    if (!asked && !voice) return r
+    if (!asked && (!voice || !user)) return r
     const seq = speakSeq
-    if (user) composing++
-    let spoken: { text: string } | { problem: string }
-    try {
-      spoken = asked ? { text: toSpeakable(e.answer) } : said ? { text: toSpeakable(said) } : await summarize($, e.answer)
-    } finally {
-      if (user) composing--
-    }
+    const spoken = asked ? { text: toSpeakable(e.answer) } : said ? { text: toSpeakable(said) } : await summarize($, e.answer)
     // while the summary was written: the user's prompt or turn, /speak stop, or /speak off
     if (seq !== speakSeq || (!asked && !voice)) return r
-    if (!asked && !user && (reading() || composing > 0) && 'text' in spoken && spoken.text) {
-      queued = spoken.text
-      return r
-    }
     const problem = 'problem' in spoken ? spoken.problem : spoken.text ? await speak($, spoken.text, true) : undefined
     if (problem) $.ui.toast(problem, { timeoutMs: 8000 })
     return r
@@ -393,7 +368,6 @@ export const register: Register = (on, options) => {
       case 'on':
       case 'off':
         voice = cmd.kind === 'on'
-        if (!voice) queued = undefined   // a reply waiting for the reading is not read either
         return { text: voice ? 'Replies will be read aloud in this session.' : 'Replies will not be read aloud (until /speak on).' }
       case 'engine': {
         if (!cmd.name) return { text: `voice engine: ${await currentEngine($)} (${ENGINES.join(' | ')})` }

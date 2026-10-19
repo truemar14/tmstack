@@ -143,26 +143,28 @@ test('only the user stops a reading: a message from another session or a backgro
   expect(await status()).toContain('idle')
 })
 
-test('a reply from a turn the user did not start waits for the reading, then is read', async ($, on) => {
-  const { jobs, player, clock } = machine(on)
+test('a reply from a turn the user did not start is not read, even when that turn starts a subagent', async ($, on) => {
+  const { jobs, summaries } = machine(on)
   await $.command.run({ command: 'speak', args: 'on' })
   await $.prompt.submit(submit)
   await $.turn.start({ text: 'hi', turnId: 't1' })
   await $.turn.complete(turn('The answer to the user.', 't1'))
-  player.state = JSON.stringify({ phase: 'playing', chunk: 0, n: 1, fraction: 0.4, paused: false })
-  await clock.advance(300)
+  expect(jobs.length).toBe(1)
   await $.prompt.submit({ ...submit, text: 'a report', origin: { kind: 'peer' as const } })
   await $.turn.start({ text: 'a report', turnId: 't2' })
-  await $.turn.complete(turn('What the report changed.', 't2'))
+  await $.turn.start({ text: 'look into it', turnId: 'a1', agentId: 'agent-1' })
+  await $.turn.complete(turn(LONG, 't2'))
   expect(jobs.length).toBe(1)
-  player.state = JSON.stringify({ phase: 'done', chunk: 0, n: 1, fraction: 1, paused: false })
-  await clock.advance(300)
-  expect(jobs.length).toBe(2)
-  expect(jobs[1]?.chunks.join(' ')).toBe('What the report changed.')
+  expect(summaries.length).toBe(0)
+  await $.prompt.submit(submit)
+  await $.turn.start({ text: 'hi', turnId: 't3' })
+  await $.turn.start({ text: 'look into it', turnId: 'a2', agentId: 'agent-2' })
+  await $.turn.complete(turn('The next answer.', 't3'))
+  expect(jobs.at(-1)?.chunks.join(' ')).toBe('The next answer.')
 })
 
-test("an automated turn's reply waits while the user's reply is still being summarized", async ($, on) => {
-  const { jobs, model, player, clock } = machine(on)
+test("an automated turn does not drop the user's summary still being written", async ($, on) => {
+  const { jobs, model } = machine(on)
   let release = () => {}
   let asked = () => {}
   const summaryAsked = new Promise<void>(done => { asked = done })
@@ -174,31 +176,11 @@ test("an automated turn's reply waits while the user's reply is still being summ
   await summaryAsked
   await $.prompt.submit({ ...submit, text: 'a report', origin: { kind: 'task-notification' as const } })
   await $.turn.start({ text: 'a report', turnId: 't2' })
+  await $.turn.start({ text: 'look into it', turnId: 'a1', agentId: 'agent-1' })
   await $.turn.complete(turn('The report.', 't2'))
-  expect(jobs.length).toBe(0)
   release()
   await reading
   expect(jobs.map(j => j.chunks.join(' '))).toEqual(['The user summary.'])
-  player.state = JSON.stringify({ phase: 'done', chunk: 0, n: 1, fraction: 1, paused: false })
-  await clock.advance(300)
-  expect(jobs.map(j => j.chunks.join(' '))).toEqual(['The user summary.', 'The report.'])
-})
-
-test('/speak off drops a reply that waits for the reading', async ($, on) => {
-  const { jobs, player, clock } = machine(on)
-  await $.command.run({ command: 'speak', args: 'on' })
-  await $.prompt.submit(submit)
-  await $.turn.start({ text: 'hi', turnId: 't1' })
-  await $.turn.complete(turn('The answer to the user.', 't1'))
-  player.state = JSON.stringify({ phase: 'playing', chunk: 0, n: 1, fraction: 0.4, paused: false })
-  await clock.advance(300)
-  await $.prompt.submit({ ...submit, text: 'a report', origin: { kind: 'peer' as const } })
-  await $.turn.start({ text: 'a report', turnId: 't2' })
-  await $.turn.complete(turn('What the report changed.', 't2'))
-  await $.command.run({ command: 'speak', args: 'off' })
-  player.state = JSON.stringify({ phase: 'done', chunk: 0, n: 1, fraction: 1, paused: false })
-  await clock.advance(300)
-  expect(jobs.length).toBe(1)
 })
 
 test('a /clear stops the reading and turns voice mode off', async ($, on) => {
@@ -240,19 +222,22 @@ test('the terminal band keeps to one row: only the bar gets shorter', async ($, 
   await $.command.run({ command: 'speak', args: 'on' })
   await $.prompt.submit(submit)
   await $.turn.complete(turn('Reading this.'))
-  player.state = JSON.stringify({ phase: 'done', chunk: 0, n: 1, fraction: 1, paused: false })
-  await clock.advance(300)
   type El = { type: string; props?: { label?: string }; children?: unknown[] }
   const text = (el: unknown): string => (typeof el === 'string' ? el : ((el as El).children ?? []).map(text).join(''))
   // The mark and "«" may draw two cells wide; a Button draws as "[ label ]"; one cell between items.
   const cells = (s: string) => s.length + (s.match(/[♪«]/g)?.length ?? 0)
-  for (const bodyColumns of [100, 55, 40]) {
-    const ui = await $.ui.mount({ plugin: 'speak', surface: 'terminal', component: 'AbovePrompt', props: { ...BAND, bodyColumns } })
-    const [mark, status, bar, ...buttons] = ((await ui.drawn()) as El).children as El[]
-    expect(buttons.length).toBe(3)
-    const row = cells(text(mark)) + 1 + cells(text(status)) + 1 + cells(text(bar))
-      + buttons.reduce((w, b) => w + 1 + cells(String(b.props?.label)) + 4, 0)
-    expect(row).toBeLessThanOrEqual(bodyColumns)
+  // read, and waiting for focus (the longest status a live reading shows) down to a narrow pane
+  for (const [phase, widths] of [['done', [100, 55, 40]], ['held', [100, 55]]] as const) {
+    player.state = JSON.stringify({ phase, chunk: 0, n: 1, fraction: phase === 'done' ? 1 : 0, paused: false })
+    await clock.advance(300)
+    for (const bodyColumns of widths) {
+      const ui = await $.ui.mount({ plugin: 'speak', surface: 'terminal', component: 'AbovePrompt', props: { ...BAND, bodyColumns } })
+      const [mark, status, bar, ...buttons] = ((await ui.drawn()) as El).children as El[]
+      expect(buttons.length).toBe(3)
+      const row = cells(text(mark)) + 1 + cells(text(status)) + 1 + cells(text(bar))
+        + buttons.reduce((w, b) => w + 1 + cells(String(b.props?.label)) + 4, 0)
+      expect(row).toBeLessThanOrEqual(bodyColumns)
+    }
   }
 })
 
