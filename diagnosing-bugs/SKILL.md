@@ -168,6 +168,34 @@ For performance regressions, logs are usually the wrong tool. Establish a
 baseline measurement (timing harness, `performance.now()`, profiler, query
 plan), then bisect. Measure first, fix second.
 
+### Vet the measurement
+
+A performance number is a claim, and it can be wrong while looking precise.
+Vet the baseline before it drives a bisect, and the fix's number before you
+report it. Answer each with evidence from a run:
+
+1. **What limits it?** Name the limiter with a profiler, CPU per process or
+   I/O wait, in a run you do not report, since profilers slow the work. If
+   the load generator saturates first, you measured the load generator.
+2. **Was it tuned?** Both sides run the way production does: release build,
+   production flags, the same data and versions, caches as warm or cold as
+   users see them. Otherwise you compared configurations.
+3. **Is it possible?** Do the arithmetic against bandwidth and cores.
+   Removing a piece that takes 10% of the run makes it at most about 11%
+   faster. A result past a limit measured a cache, a no-op or a bug.
+4. **Did it error?** Count failures and check the outputs are correct.
+   Rejections are fast and retries are slow.
+5. **Does it reproduce?** At least five runs per side, alternating, reported
+   as median and range. A gap inside the run-to-run range is no difference.
+6. **Did the work happen?** The request reached the server, the rows were
+   written, the result was used. Unawaited promises and unread generators
+   time work that never ran.
+
+Report the verdict first (faster, slower, no measurable difference, or
+inconclusive), then the number with its unit, run count, range and limiter.
+It is inconclusive when the limiter is unknown, a side ran untuned, or
+questions 4 and 6 went unchecked.
+
 ## Phase 5: fix with a regression test
 
 Write the regression test before the fix, but only at a correct seam: one
