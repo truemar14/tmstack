@@ -2,7 +2,7 @@
 # check-skills.sh - lint every skill's frontmatter and keep private names out of this public repo.
 # For every top-level directory with a SKILL.md: the frontmatter opens on line 1 and closes, `name`
 # matches the directory, `description` is not empty, and metadata.platform and metadata.harness hold
-# only values install.sh and install.ps1 understand. Then, when PRIVATE_NAMES is set (one term per
+# only values install.sh and install.ps1 understand, and the skill is listed in the tmstack plugin. Then, when PRIVATE_NAMES is set (one term per
 # line, matched as whole words, any case), no tracked file may contain any of its terms. The terms
 # live outside this repo, in a CI secret, because listing them here would publish them.
 # Usage: ./check-skills.sh            (exits 1 and prints one line per problem; run it from anywhere)
@@ -34,6 +34,9 @@ for skill in "$REPO"/*/SKILL.md; do
   for v in $(field "$skill" harness); do
     [[ $HARNESSES == *" $v "* ]] || problem "$rel: unknown harness '$v' (expected one of${HARNESSES% })"
   done
+  # The tmstack plugin lists its skills by path; `claude plugin validate` catches a listed path that is gone.
+  grep -qF "\"./$name\"" "$REPO/.claude-plugin/marketplace.json" ||
+    problem "$rel: not in the tmstack plugin's skills in .claude-plugin/marketplace.json"
 done
 
 if [[ -n ${PRIVATE_NAMES:-} ]]; then

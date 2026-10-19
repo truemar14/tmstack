@@ -1,6 +1,6 @@
 # TMStack
 
-Skills for Claude Code and Codex, plus one Claude Code plugin, shared across
+Skills for Claude Code and Codex, plus two Claude Code plugins, shared across
 every machine I work on. Each top-level directory with a `SKILL.md` is one
 skill. The files inside are the skill's own scripts.
 
@@ -83,7 +83,42 @@ one file exempt from the house style in `writing-for-agents`. Each adapted
 skill keeps the source notice in its `LICENSE.txt`. Everything else is MIT,
 see `LICENSE`.
 
-## Plugin
+## Plugins
+
+### Skills in cloud sessions and Projects
+
+A cloud session, or a cloud thread in a Claude Project, never reads
+`~/.claude`, so the installer's links do not reach it. The `tmstack` plugin
+carries the same skills there. Add it in a Project's settings under Plugins,
+from the GitHub marketplace `truemar14/tmstack`. In a session that takes
+plugin commands:
+
+```sh
+claude plugin marketplace add truemar14/tmstack
+claude plugin install tmstack@tmstack
+```
+
+Its skills are named `tmstack:<skill>`, such as `/tmstack:file-pr`. Do not
+install it on a machine that runs the installer, or each skill loads twice.
+Install it from GitHub, not from a checkout's path: a path install copies the
+whole folder, ignored files included, while a GitHub install has only what is
+committed. A new skill goes into the plugin's `skills` list in
+`.claude-plugin/marketplace.json`, and `check-skills.sh` fails until it does.
+
+What the skills need from the machine does not come with them. Set these on
+the cloud environment:
+
+- `FILE_HOST_URL` as an environment variable, and the file host's domain in a
+  custom network allowlist.
+- `FILE_HOST_TOKEN` stays out of environment variables, since anyone who uses
+  the environment can read those. Keep file-upload to local sessions until
+  the token can come from a network secret.
+
+The cloud GitHub proxy blocks the GraphQL API, so `gh pr` and `gh issue` fail
+there. file-pr and review-loop call `gh pr`, so they need a local session or
+a Project thread on your own computer.
+
+### speak
 
 `speak-mod/` is a Claude Code plugin of function hooks ("Claude Mods"). It
 reads replies aloud with a Fish Audio or ElevenLabs voice, adds `/speak`, and
