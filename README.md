@@ -1,6 +1,6 @@
 # TMStack
 
-Skills for Claude Code and Codex, plus one Claude Code plugin, shared across
+Skills for Claude Code and Codex, plus two Claude Code plugins, shared across
 every machine I work on. Each top-level directory with a `SKILL.md` is one
 skill. The files inside are the skill's own scripts.
 
@@ -25,11 +25,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $HOME\Work\tmstack\install.p
 ```
 
 The installer symlinks every skill allowed on this platform into
-`~/.claude/skills/` and `~/.codex/skills/`, for each of the two harnesses
-present on the machine. Run it again after pulling. It re-points its own
-links, removes its links to skills that no longer exist, and never overwrites
-a real skill directory or a link it did not make. `install.ps1` does the same
-on Windows with junctions.
+`~/.claude/skills/` for Claude Code and `~/.agents/skills/` for Codex, for
+each of the two harnesses present on the machine. Run it again after pulling.
+It re-points its own links, removes its links to skills that no longer exist,
+and never overwrites a real skill directory or a link it did not make. It also
+removes the links earlier versions made in `~/.codex/skills/`, the old Codex
+location. `install.ps1` does the same on Windows with junctions.
 
 Give either installer a path to install another repo with the same layout,
 such as a private one:
@@ -67,23 +68,72 @@ The installer does not set up:
 | `review-loop/` | Review a PR with a fresh reviewer each round, fix, and repeat until a round is clean; merge only when asked. Works through every open PR in dependency order. |
 | `test-handoff/` | Check a change in the real app before handing it over, then give the user numbered test scenarios and the steps only they can do. |
 | `wait-what/` | Restate the last reply in plain words: what happened, what it means, the next step. |
+| `retro/` | Look back at a session from its transcript and propose changes to the agent's environment: checks, pointers, skills, steering files. Applies only what the user picks. User-invoked. |
+| `blast-radius/` | Find what a change breaks outside its diff, and prove the one fact it is safe because of by running real code. User-invoked. |
+| `handoff/` | Write a handoff document a fresh agent can continue from, where the next machine can read it. User-invoked. |
 
 The skills call each other. html-communication publishes an Artifact, or goes
 through file-upload when the link must open without a login. file-pr and
 babysit-pr use file-upload for screenshots. file-pr sketches a change as a
 file tree or call tree when that reads faster, and hands off to babysit-pr.
 file-pr and html-communication run their prose through unslop before it
-ships. review-loop holds each round to babysit-pr's done bar.
+ships. review-loop holds each round to babysit-pr's done bar. Where one skill runs
+another, it says "Call the Skill tool with" and the name, the convention in
+`writing-for-agents/SKILL-MECHANICS.md`.
 
-grilling, domain-modeling, writing-for-agents and diagnosing-bugs are adapted
-from Matt Pocock's skills (1.2.3, MIT). unslop is adapted from
-backnotprop/pstack (MIT). frontend-design is a verbatim copy from
-anthropics/skills (Apache 2.0), and it keeps upstream's dashes, so it is the
-one file exempt from the house style in `writing-for-agents`. Each adapted
+retro, blast-radius and handoff are user-invoked: they fire only when typed,
+so their descriptions take no room in the agent's context. Each carries an
+`agents/openai.yaml` so Codex treats it the same way.
+
+grilling, domain-modeling, writing-for-agents, diagnosing-bugs, retro and
+handoff are adapted from Matt Pocock's skills (MIT; the version is in each
+`LICENSE.txt`). unslop and blast-radius are adapted from backnotprop/pstack
+(MIT). Some sections borrow ideas in new words: babysit-pr's handling of review
+comments and test-handoff's evidence table from obra/superpowers,
+diagnosing-bugs' measurement checks from pstack, and test-handoff's headless
+fallback from anthropics/skills' webapp-testing. frontend-design is a
+verbatim copy from anthropics/skills (Apache 2.0), and it keeps upstream's
+dashes, so it is the one file exempt from the house style in
+`writing-for-agents`. Each adapted
 skill keeps the source notice in its `LICENSE.txt`. Everything else is MIT,
 see `LICENSE`.
 
-## Plugin
+## Plugins
+
+### Skills in cloud sessions and Projects
+
+A cloud session, or a cloud thread in a Claude Project, never reads
+`~/.claude`, so the installer's links do not reach it. The `tmstack` plugin
+carries the same skills there. Add it in a Project's settings under Plugins,
+from the GitHub marketplace `truemar14/tmstack`. In a session that takes
+plugin commands:
+
+```sh
+claude plugin marketplace add truemar14/tmstack
+claude plugin install tmstack@tmstack
+```
+
+Its skills are named `tmstack:<skill>`, such as `/tmstack:file-pr`. Do not
+install it on a machine that runs the installer, or each skill loads twice.
+Install it from GitHub, not from a checkout's path: a path install copies the
+whole folder, ignored files included, while a GitHub install has only what is
+committed. A new skill goes into the plugin's `skills` list in
+`.claude-plugin/marketplace.json`, and `check-skills.sh` fails until it does.
+
+What the skills need from the machine does not come with them. Set these on
+the cloud environment:
+
+- `FILE_HOST_URL` as an environment variable, and the file host's domain in a
+  custom network allowlist.
+- `FILE_HOST_TOKEN` stays out of environment variables, since anyone who uses
+  the environment can read those. Keep file-upload to local sessions until
+  the token can come from a network secret.
+
+The cloud GitHub proxy blocks the GraphQL API, so `gh pr` and `gh issue` fail
+there. file-pr and review-loop call `gh pr`, so they need a local session or
+a Project thread on your own computer.
+
+### speak
 
 `speak-mod/` is a Claude Code plugin of function hooks ("Claude Mods"). It
 reads replies aloud with a Fish Audio or ElevenLabs voice, adds `/speak`, and
