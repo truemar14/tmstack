@@ -66,6 +66,7 @@ The installer does not set up:
 | `diagnosing-bugs/` | Six-phase discipline for hard bugs: a red feedback loop before any theory, minimise, ranked hypotheses, one probe at a time, regression test, cleanup. |
 | `review-loop/` | Review a PR with a fresh reviewer each round, fix, and repeat until a round is clean; merge only when asked. Works through every open PR in dependency order. |
 | `test-handoff/` | Check a change in the real app before handing it over, then give the user numbered test scenarios and the steps only they can do. |
+| `verify-setup/` | Find and run every way an agent can check a project works, and record what passed, and what each out-of-reach check needs, as a Verify section in its `AGENTS.md`. Run it by hand. |
 | `wait-what/` | Restate the last reply in plain words: what happened, what it means, the next step. |
 
 The skills call each other. html-communication publishes an Artifact, or goes
@@ -73,7 +74,8 @@ through file-upload when the link must open without a login. file-pr and
 babysit-pr use file-upload for screenshots. file-pr sketches a change as a
 file tree or call tree when that reads faster, and hands off to babysit-pr.
 file-pr and html-communication run their prose through unslop before it
-ships. review-loop holds each round to babysit-pr's done bar.
+ships. review-loop holds each round to babysit-pr's done bar. test-handoff starts
+from the Verify section that verify-setup writes.
 
 grilling, domain-modeling, writing-for-agents and diagnosing-bugs are adapted
 from Matt Pocock's skills (1.2.3, MIT). unslop is adapted from

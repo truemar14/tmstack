@@ -21,6 +21,7 @@
         "./review-loop",
         "./test-handoff",
         "./unslop",
+        "./verify-setup",
         "./wait-what",
         "./writing-for-agents"
       ]
