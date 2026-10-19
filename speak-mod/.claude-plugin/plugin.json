@@ -71,7 +71,7 @@
     "media": {
       "type": "string",
       "title": "Other audio while speaking",
-      "description": "Windows only. duck: fade every other app that is playing down to a fifth of its volume under the voice, and back up after the last queued reply. pause: fade media apps out and pause them, then resume and fade them back in. off: leave other audio alone.",
+      "description": "Windows only. duck: fade every other app that is playing down to a tenth of its volume under the voice, and back up after the last queued reply. pause: fade media apps out and pause them, then resume and fade them back in. off: leave other audio alone.",
       "default": "duck"
     }
   }
