@@ -175,7 +175,8 @@ function Stop-Playing { Exit-Playing; Remove-Item $readyFlag -ErrorAction Silent
 $duckLevel = 1 / 12
 $duckFile = Join-Path $env:TEMP 'claude-speak.duck.json'
 $mediaFile = Join-Path $env:TEMP 'claude-speak.media.json'
-if ($script:winrt -and $media -ne 'off') {
+# Loaded also with media off when volumes are saved, so this player can restore what a dead one ducked.
+if ($script:winrt -and ($media -ne 'off' -or (Test-Path $duckFile))) {
   try {
     Add-Type -TypeDefinition @'
 using System;
@@ -280,14 +281,16 @@ function Await($op, $type) { $t = $script:asTask.MakeGenericMethod($type).Invoke
 function Suspend-Media {
   if ($media -eq 'off' -or -not $script:winrt) { return }
   try {
-    # Volumes already saved win: a player before this one may have left them ducked.
+    # Volumes already saved win: a player before this one left those apps ducked, and they stay
+    # where they are. Only apps not ducked yet fade down.
     $volumes = Read-Duck
+    $fresh = New-Object 'System.Collections.Generic.Dictionary[uint32,single]'
     $playing = [SpeakAudio.Mixer]::Playing([uint32]$PID)
-    foreach ($id in $playing.Keys) { if (-not $volumes.ContainsKey($id)) { $volumes[$id] = $playing[$id] } }
+    foreach ($id in $playing.Keys) { if (-not $volumes.ContainsKey($id)) { $volumes[$id] = $playing[$id]; $fresh[$id] = $playing[$id] } }
     if ($volumes.Count) {
       $out = @{}; foreach ($id in $volumes.Keys) { $out["$id"] = $volumes[$id] }
       ConvertTo-Json $out -Compress | Set-Content $duckFile
-      Fade-Volumes $volumes 1 $duckLevel; Log "ducked: $($volumes.Keys -join ', ')"
+      if ($fresh.Count) { Fade-Volumes $fresh 1 $duckLevel; Log "ducked: $($fresh.Keys -join ', ')" }
     }
   } catch { Log "duck failed: $($_.Exception.Message)" }
   if ($media -eq 'pause') {
@@ -329,9 +332,11 @@ function Resume-Media {
     Remove-Item $mediaFile -ErrorAction SilentlyContinue
   }
   if (Test-Path $duckFile) {
-    try { $volumes = Read-Duck; Fade-Volumes $volumes $duckLevel 1; Log "restored: $($volumes.Keys -join ', ')" }
-    catch { Log "restore failed: $($_.Exception.Message)" }
-    Remove-Item $duckFile -ErrorAction SilentlyContinue
+    # The file goes only once the volumes are back: a failed restore leaves it for the next player.
+    try {
+      $volumes = Read-Duck; Fade-Volumes $volumes $duckLevel 1; Log "restored: $($volumes.Keys -join ', ')"
+      Remove-Item $duckFile -ErrorAction SilentlyContinue
+    } catch { Log "restore failed, volumes kept in $($duckFile): $($_.Exception.Message)" }
   }
 }
 
