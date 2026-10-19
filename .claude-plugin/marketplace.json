@@ -10,6 +10,7 @@
       "license": "MIT",
       "skills": [
         "./babysit-pr",
+        "./blast-radius",
         "./catch-up",
         "./diagnosing-bugs",
         "./domain-modeling",
@@ -17,7 +18,9 @@
         "./file-upload",
         "./frontend-design",
         "./grilling",
+        "./handoff",
         "./html-communication",
+        "./retro",
         "./review-loop",
         "./test-handoff",
         "./unslop",
