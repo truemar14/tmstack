@@ -41,7 +41,7 @@ otherwise:
 ```
 
 When a fix is easier to see than to describe, a screenshot or recording of
-the fixed state goes in the reply, through the `file-upload` skill.
+the fixed state goes in the reply: call the Skill tool with `file-upload`.
 
 Do not let review feedback expand the PR beyond the user's original goal.
 Address real shortcomings, but avoid scope creep.

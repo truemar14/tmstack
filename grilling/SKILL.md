@@ -44,7 +44,7 @@ The session is done when the frontier is empty: every branch of the design
 tree visited, nothing left silently assumed. Do not act on it until the user
 confirms you have reached a shared understanding.
 
-When the plan touches a project's domain, load the `domain-modeling` skill
-alongside and write terms into `CONTEXT.md` and decisions into `docs/adr/` as
-each round settles them, so the interview leaves a record in the repo, not
-only a shared understanding in the conversation.
+When the plan touches a project's domain, call the Skill tool with
+`domain-modeling` and write terms into `CONTEXT.md` and decisions into
+`docs/adr/` as each round settles them, so the interview leaves a record in
+the repo, not only a shared understanding in the conversation.

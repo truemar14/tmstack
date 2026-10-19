@@ -40,8 +40,8 @@ written down.
 2. Verify each finding against the source. Fix the real ones; the false ones
    go in the report with the reason, since the reviewer's findings never
    appear on the PR.
-3. Push, then check CI on the new head, and work any new review-bot or human
-   comments as the `babysit-pr` skill does.
+3. Push, then check CI on the new head. Call the Skill tool with `babysit-pr`
+   and work any new review-bot or human comments as it says.
 
 A round is **clean** when a fresh reviewer, looking at the current head,
 returns no real findings, CI is green, and every review thread on the PR is

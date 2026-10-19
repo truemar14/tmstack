@@ -33,8 +33,8 @@ report or review with no format named is an HTML page.
 One self-contained HTML file, capped at 512 KB.
 
 - Write it like a spec, not a landing page: dense, scannable, no hero,
-  decorative chrome or marketing voice. Run the copy through the `unslop`
-  skill's rules before publishing.
+  decorative chrome or marketing voice. Before publishing, call the Skill
+  tool with `unslop` and apply it to the copy.
 - Start the page's `<style>` with the contents of this skill's `style.css`
   (off-white ground, system type, one accent, dark theme through tokens) and
   style everything through its tokens: pages then look alike and follow the
@@ -79,7 +79,7 @@ Artifact: write the file, publish it the way the Artifact tool's own
 instructions describe, and report the URL. For a document, `style.css` is the
 existing design system those instructions tell you to respect.
 
-File host: write the file, upload it with the `file-upload` skill, report the
+File host: write the file, call the Skill tool with `file-upload`, report the
 local path and the returned URL. To update, PUT to the filename from the
 previously returned URL, as that skill describes. Upload under a fresh name
 only when a separate new draft is wanted. Never claim the document is hosted
