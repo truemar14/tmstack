@@ -4,12 +4,14 @@
 # layout is installed with this same script, so it carries no installer of its own.
 # Idempotent: run it after cloning and again after pulling. For every top-level directory with a
 # SKILL.md it reads the frontmatter's metadata.platform (default: all) and metadata.harness (default:
-# claude and codex) and symlinks the directory into ~/.claude/skills/<name> and ~/.codex/skills/<name>
-# for each listed harness that exists here (~/.claude or ~/.codex present). When the checkout has them,
-# it also links CLAUDE.md (or AGENTS.md when there is no CLAUDE.md) into ~/.claude, and AGENTS.md into
-# ~/.codex, so a skills-only repo and a private repo holding AGENTS.md install side by side.
-# Links into the repo are re-pointed and removed when their skill folder is gone; a symlink to anywhere
-# else, or a real file or directory in the way, is left alone and reported.
+# claude and codex) and symlinks the directory into ~/.claude/skills/<name> and, for Codex,
+# ~/.agents/skills/<name>, for each listed harness that exists here (~/.claude or ~/.codex present).
+# When the checkout has them, it also links CLAUDE.md (or AGENTS.md when there is no CLAUDE.md) into
+# ~/.claude, and AGENTS.md into ~/.codex, so a skills-only repo and a private repo holding AGENTS.md
+# install side by side.
+# Links into the repo are re-pointed and removed when their skill folder is gone, and removed from
+# ~/.codex/skills, the deprecated Codex root earlier runs used; a symlink to anywhere else, or a real
+# file or directory in the way, is left alone and reported.
 # Usage: ./install.sh [--dry-run] [<repo>]     (Linux and macOS; on Windows use install.ps1, since
 # Git Bash makes copies instead of symlinks unless Developer Mode is on)
 set -euo pipefail
@@ -40,6 +42,9 @@ link() {   # link <target> <path>
   fi
 }
 
+# skills <harness>: where that harness reads user skills. Codex reads ~/.agents/skills.
+skills() { if [[ $1 == codex ]]; then echo "$HOME/.agents/skills"; else echo "$HOME/.$1/skills"; fi; }
+
 harnesses=(); [[ -d ~/.claude ]] && harnesses+=(claude); [[ -d ~/.codex ]] && harnesses+=(codex)
 if ((${#harnesses[@]} == 0)); then echo "no ~/.claude or ~/.codex here: install Claude Code or Codex first" >&2; exit 1; fi
 echo "$REPO: platform $PLATFORM, harnesses: ${harnesses[*]}${DRY:+ (dry run)}"
@@ -66,15 +71,21 @@ for skill in "$REPO"/*/SKILL.md; do
   echo "$name"
   for h in "${harnesses[@]}"; do
     [[ -z $want || " $want " == *" $h "* ]] || continue
-    link "$dir" ~/."$h"/skills/"$name"
+    link "$dir" "$(skills "$h")/$name"
   done
 done
 
 # Links into the repo whose skill folder no longer exists are ours to remove.
 for h in "${harnesses[@]}"; do
-  for l in ~/."$h"/skills/*; do
+  for l in "$(skills "$h")"/*; do
     [[ -L $l ]] || continue; t=$(readlink "$l")
     [[ $t == "$REPO"/* && ! -f $t/SKILL.md ]] || continue
     echo "  remove $l (skill gone)"; [[ -n $DRY ]] || rm "$l"
   done
+done
+
+# Codex once read ~/.codex/skills, and earlier runs linked there. Every link into the repo there is ours.
+for l in ~/.codex/skills/*; do
+  [[ -L $l && $(readlink "$l") == "$REPO"/* ]] || continue
+  echo "  remove $l (Codex reads ~/.agents/skills)"; [[ -n $DRY ]] || rm "$l"
 done

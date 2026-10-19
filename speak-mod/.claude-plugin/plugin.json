@@ -1,6 +1,6 @@
 {
   "name": "speak",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Reads Claude's replies aloud with a neural voice from Fish Audio or ElevenLabs. With /speak on (per session) every answer is read, long ones as a short Haiku summary; /speak reads the last reply, speaks text, or asks the model for a spoken answer. Playback controls (pause, back 5 s, stop, replay) sit above the prompt. Needs function hooks (early access) and a terminal with speakers.",
   "author": { "name": "Mariyan Damyanov" },
   "license": "MIT",
@@ -68,11 +68,11 @@
       "description": "Inside Herdr, a reply from a session that is not the focused pane is held silently until you switch to it (dropped by a new prompt there, or after 15 minutes).",
       "default": true
     },
-    "media_pause": {
-      "type": "boolean",
-      "title": "Pause media while speaking",
-      "description": "Windows only: pause whatever media apps are playing before the voice starts and resume them after the last queued reply.",
-      "default": true
+    "media": {
+      "type": "string",
+      "title": "Other audio while speaking",
+      "description": "Windows only. duck: fade every other app that is playing down to a twelfth of its volume under the voice, and back up after the last queued reply. pause: fade media apps out and pause them, then resume and fade them back in. off: leave other audio alone.",
+      "default": "duck"
     }
   }
 }

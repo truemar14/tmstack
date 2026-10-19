@@ -33,8 +33,8 @@ report or review with no format named is an HTML page.
 One self-contained HTML file, capped at 512 KB.
 
 - Write it like a spec, not a landing page: dense, scannable, no hero,
-  decorative chrome or marketing voice. Run the copy through the `unslop`
-  skill's rules before publishing.
+  decorative chrome or marketing voice. Before publishing, call the Skill
+  tool with `unslop` and apply it to the copy.
 - Start the page's `<style>` with the contents of this skill's `style.css`
   (off-white ground, system type, one accent, dark theme through tokens) and
   style everything through its tokens: pages then look alike and follow the
@@ -56,9 +56,9 @@ When the user asks for variants:
 - Render real styled variants, not descriptions.
 - Label them `A`, `B`, `C`... and lay them out for direct comparison.
 - A mock of an existing product matches that product's colors, type, spacing,
-  and components. A new surface with no design system to match follows the
-  `frontend-design` skill. The document's own style stays outside the mocked
-  interface.
+  and components. For a new surface with no design system to match, call
+  the Skill tool with `frontend-design`. The document's own style stays
+  outside the mocked interface.
 - A mock of an existing page changes only what the user asked to change; the
   rest of the page, such as its header and footer, stays as the original.
 - Keep one file across iterations so its URL stays stable.
@@ -79,7 +79,7 @@ Artifact: write the file, publish it the way the Artifact tool's own
 instructions describe, and report the URL. For a document, `style.css` is the
 existing design system those instructions tell you to respect.
 
-File host: write the file, upload it with the `file-upload` skill, report the
+File host: write the file, call the Skill tool with `file-upload`, report the
 local path and the returned URL. To update, PUT to the filename from the
 previously returned URL, as that skill describes. Upload under a fresh name
 only when a separate new draft is wanted. Never claim the document is hosted

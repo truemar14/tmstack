@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { parseArgs } from '../hooks/args.ts'
-import { parseState, pluginRoot, spawnArgv, tempDirOf } from '../hooks/protocol.ts'
+import { mediaMode, parseState, pluginRoot, spawnArgv, tempDirOf } from '../hooks/protocol.ts'
 
 describe('parseArgs', () => {
   test('words', () => {
@@ -55,3 +55,13 @@ describe('protocol helpers', () => {
   })
 })
 
+
+describe('mediaMode', () => {
+  test('keeps duck, pause and off, and falls back to duck', () => {
+    assert.equal(mediaMode('pause'), 'pause')
+    assert.equal(mediaMode('off'), 'off')
+    assert.equal(mediaMode('duck'), 'duck')
+    assert.equal(mediaMode('Pause'), 'duck')
+    assert.equal(mediaMode(''), 'duck')
+  })
+})

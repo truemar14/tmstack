@@ -5,6 +5,7 @@ metadata:
   harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
+  requires: "for web changes, browser tools, or else the app's dev server and headless Playwright"
 ---
 
 # Test handoff
@@ -27,11 +28,34 @@ the check.
 - Visual variants or mocks: open every one; a broken variant never reaches the
   user.
 
+With no browser tools (Codex, a headless box), a web app is still in
+reach: start its dev server, wait until the port answers, run a short
+headless Playwright script against it, then stop the server. The script
+waits for the network to go idle before it reads the page, then saves a
+screenshot and the console log. A browser extension needs the browser it
+ships for, so this covers only its pages that also load on their own.
+Without Playwright either, the app is out of reach, as below.
+
 When the real target is out of reach (another machine, a signed-in account, a
 device), say exactly which part you could not check and why.
 
 Done when each changed behaviour was seen working in the real target, or is
 named as unchecked with the reason.
+
+### Evidence for each claim
+
+A claim in the handoff needs a check run in this session, with its output
+read. An earlier run, or a reason it should work, is not evidence.
+
+| Claim | Needs | Does not count |
+|---|---|---|
+| Fixed | The original symptom, retried and gone | The code changed |
+| Tests pass | The test command's output, zero failures | A run before the last edit |
+| Builds | The build command, exit 0 | Lint or typecheck passing |
+| Regression test works | Seen failing without the fix, passing with it | It passes once |
+| A subagent did it | The diff, read | The subagent's report |
+
+A claim the table cannot back goes in the handoff as unchecked, not as done.
 
 ## 2. Hand off
 
