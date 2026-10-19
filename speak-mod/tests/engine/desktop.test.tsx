@@ -163,6 +163,16 @@ test('a reply from a turn the user did not start is not read, even when that tur
   expect(jobs.at(-1)?.chunks.join(' ')).toBe('The next answer.')
 })
 
+test("the user typing into a running automated turn makes that turn the user's, so its reply is read", async ($, on) => {
+  const { jobs } = machine(on)
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit({ ...submit, text: 'a report', origin: { kind: 'peer' as const } })
+  await $.turn.start({ text: 'a report', turnId: 't1' })
+  await $.prompt.submit({ ...submit, turnId: 't1' })
+  await $.turn.complete(turn('Now the user is in it.', 't1'))
+  expect(jobs.map(j => j.chunks.join(' '))).toEqual(['Now the user is in it.'])
+})
+
 test("an automated turn does not drop the user's summary still being written", async ($, on) => {
   const { jobs, model } = machine(on)
   let release = () => {}
@@ -226,7 +236,7 @@ test('the terminal band keeps to one row: only the bar gets shorter', async ($, 
   const text = (el: unknown): string => (typeof el === 'string' ? el : ((el as El).children ?? []).map(text).join(''))
   // The mark and "«" may draw two cells wide; a Button draws as "[ label ]"; one cell between items.
   const cells = (s: string) => s.length + (s.match(/[♪«]/g)?.length ?? 0)
-  // read, and waiting for focus (the longest status a live reading shows) down to a narrow pane
+  // read, and waiting for focus, a long status with the live controls, down to a narrow pane
   for (const [phase, widths] of [['done', [100, 55, 40]], ['held', [100, 55]]] as const) {
     player.state = JSON.stringify({ phase, chunk: 0, n: 1, fraction: phase === 'done' ? 1 : 0, paused: false })
     await clock.advance(300)

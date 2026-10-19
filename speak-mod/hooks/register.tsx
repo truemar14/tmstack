@@ -14,7 +14,7 @@
 //
 // Layout note: the engine follows `$` only into functions declared at the top of this file, so the
 // state is module-level and every helper that takes `$` is a top-level const.
-import type { EngineInterface, PluginOptions, Register } from 'claude-code'
+import type { EngineInterface, PluginOptions, PromptOrigin, Register } from 'claude-code'
 import { HELP, parseArgs } from './args.ts'
 import { bandTree, desktopBandTree } from './band.tsx'
 import {
@@ -67,7 +67,7 @@ let nextTurnFromUser = true
 // Origins of prompts that are not the user's: the engine's own, other sessions', and a mod's
 // ($.prompt.submit, this one's `/speak ask` too). Every other origin is the user's: typed, from the
 // phone, through the desktop app, or one the engine adds later.
-const AUTOMATED: ReadonlySet<string> = new Set([
+const AUTOMATED: ReadonlySet<string> = new Set<PromptOrigin['kind']>([
   'task-notification', 'scheduled-trigger', 'peer', 'peer-send-message', 'projects-relay', 'channel',
   'coordinator', 'observer', 'observer-activity', 'plugin',
 ])
