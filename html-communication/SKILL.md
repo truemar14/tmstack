@@ -56,9 +56,9 @@ When the user asks for variants:
 - Render real styled variants, not descriptions.
 - Label them `A`, `B`, `C`... and lay them out for direct comparison.
 - A mock of an existing product matches that product's colors, type, spacing,
-  and components. A new surface with no design system to match follows the
-  `frontend-design` skill. The document's own style stays outside the mocked
-  interface.
+  and components. For a new surface with no design system to match, call
+  the Skill tool with `frontend-design`. The document's own style stays
+  outside the mocked interface.
 - A mock of an existing page changes only what the user asked to change; the
   rest of the page, such as its header and footer, stays as the original.
 - Keep one file across iterations so its URL stays stable.

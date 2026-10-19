@@ -5,6 +5,7 @@ metadata:
   harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
+  requires: "for web changes, browser tools, or else the app's dev server and headless Playwright"
 ---
 
 # Test handoff
@@ -33,6 +34,7 @@ headless Playwright script against it, then stop the server. The script
 waits for the network to go idle before it reads the page, then saves a
 screenshot and the console log. A browser extension needs the browser it
 ships for, so this covers only its pages that also load on their own.
+Without Playwright either, the app is out of reach, as below.
 
 When the real target is out of reach (another machine, a signed-in account, a
 device), say exactly which part you could not check and why.
