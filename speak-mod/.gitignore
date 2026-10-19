@@ -1,2 +1,4 @@
-# where older Claude Code versions wrote the hook types; they now go in .claude-plugin/types
+# the hook types Claude Code writes when a session loads the mod
+.claude-plugin/types/
+# where older Claude Code versions wrote them
 .claude/types/

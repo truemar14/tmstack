@@ -31,7 +31,8 @@ shelled out around it. Codex has no function hooks and no voice mode.
 - A band above the prompt shows what is being read with a progress line and
   buttons: back 5 s, pause, stop; after the reply, replay (kept
   20 minutes) and close.
-- A new prompt stops this session's reading. Inside [Herdr](https://herdr.dev),
+- A new prompt or a `/clear` stops this session's reading, and `/clear` turns
+  voice mode off like any new session. Inside [Herdr](https://herdr.dev),
   a terminal workspace for agent sessions, a reply from a session that is not
   the focused pane is held until you switch to it. Voices
   never overlap across sessions. On Windows, media apps that were playing are
@@ -42,7 +43,7 @@ shelled out around it. Codex has no function hooks and no voice mode.
 | Path | Role |
 |---|---|
 | `.claude-plugin/plugin.json` | Manifest and `userConfig` (engine; per-engine API key in secure storage, voice and model; speed, focus gate, media pause). |
-| `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `tool.call` for the desktop recap, `turn.complete` with the Haiku summary, `command.run` for `/speak`, `ui.render` for the band. |
+| `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `tool.call` for the desktop recap, `turn.complete` with the Haiku summary, `command.run` for `/speak`, `session.end` for `/clear`, `ui.render` for the band. |
 | `hooks/speakable.ts` | Markdown to spoken text, clip splitting. |
 | `hooks/args.ts` | `/speak` argument parsing. |
 | `hooks/protocol.ts` | The file protocol with the player and the pure helpers around it. |

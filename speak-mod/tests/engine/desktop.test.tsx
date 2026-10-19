@@ -1,14 +1,14 @@
 /* @jsx h */
 // Engine tests, run with `claude plugin test speak-mod` (the pure tests in tests/ run under node):
-// what voice mode reads (the wrap_up recap, a short reply, a Haiku summary), `/speak ask`, and the
-// band on both surfaces.
+// what voice mode reads (the wrap_up recap, a short reply, a Haiku summary), `/speak ask`, what a
+// /clear ends, and the band on both surfaces.
 import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-type JobFile = { chunks: string[] }
+type JobFile = { chunks: string[]; session: string }
 type Summary = { isAnswered: true; text: string } | { isAnswered: false; reason: 'empty-reply' }
 
-// Stands in for the machine beneath the mod: a key, a session, a player that starts, and a
+// Stands in for the machine beneath the mod: a key, a session (`ids.current`, its id), a player that starts, and a
 // summarizer. `jobs` are the job files the mod writes, one per reply it hands to the
 // player; `player.state` is what the player's state file holds, read on the band's next poll;
 // `summaries` are the prompts the mod sent to the summary model, and `model.reply` what it answers;
@@ -19,6 +19,7 @@ function machine(on: On) {
   const prompts: string[] = []
   const toasts: string[] = []
   const player = { state: '' }
+  const ids = { current: 'session-1' }
   const model = { reply: (): Promise<Summary> => Promise.resolve({ isAnswered: true, text: 'I fixed the bug.' }) }
   mock.env(on, { HOME: '/home/u', XDG_RUNTIME_DIR: '/run/u', FISH_API_KEY: 'key' })
   mock.store(on, {})
@@ -29,7 +30,8 @@ function machine(on: On) {
   })
   on('ui.toast', (_$, e) => (toasts.push(e.text), Promise.resolve({ value: undefined })))
   const clock = mock.clock(on, { now: 1000 })
-  on('session.id', () => Promise.resolve({ value: 'session-1' }))
+  on('session.id', () => Promise.resolve({ value: ids.current }))
+  on('session.end', (_$, e) => Promise.resolve({ sessionId: e.sessionId }))
   on('fs.write', (_$, e) => {
     if (e.path.endsWith('.json')) jobs.push(JSON.parse(e.text) as JobFile)
     return Promise.resolve({ value: undefined })
@@ -39,7 +41,7 @@ function machine(on: On) {
   on('prompt.submit', (_$, e) => (prompts.push(e.text), Promise.resolve({ text: e.text, context: e.context })))
   on('turn.start', (_$, e) => Promise.resolve({ turnId: e.turnId }))
   on('turn.complete', (_$, e) => Promise.resolve({ text: e.answer }))
-  return { jobs, summaries, prompts, toasts, model, clock, player }
+  return { jobs, summaries, prompts, toasts, model, clock, player, ids }
 }
 
 const turn = (answer: string, turnId = 't1') => ({ answer, reason: 'answer' as const, durationMs: 1, isAborted: false, turnId })
@@ -124,6 +126,29 @@ test('/speak ask reads its own turn only: not one running when it was sent, not 
   await $.turn.start({ text: asked, turnId: 't4' })
   await $.turn.complete(turn(LONG, 't4'))
   expect(jobs.at(-1)?.chunks.join(' ')).toBe(LONG.trim())
+})
+
+test('a /clear stops the reading and turns voice mode off', async ($, on) => {
+  const { jobs, ids } = machine(on)
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.complete(turn('Reading this.'))
+  expect(jobs.length).toBe(1)
+  await $.session.end({ reason: 'clear', sessionId: ids.current, resume: { id: ids.current } })
+  expect((await $.command.run({ command: 'speak', args: 'status' })).text).toContain('idle')
+  await $.prompt.submit(submit)
+  await $.turn.complete(turn('Not read.', 't2'))
+  expect(jobs.length).toBe(1)
+})
+
+test('after a /clear the player gets the new session id, so the focus gate still knows it', async ($, on) => {
+  const { jobs, ids } = machine(on)
+  await $.session.end({ reason: 'clear', sessionId: ids.current, resume: { id: ids.current } })
+  ids.current = 'session-2'
+  await $.command.run({ command: 'speak', args: 'on' })
+  await $.prompt.submit(submit)
+  await $.turn.complete(turn('Reading this.'))
+  expect(jobs[0]?.session).toBe('session-2')
 })
 
 test('the band draws its controls on the terminal and in the desktop app', async ($, on) => {

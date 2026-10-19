@@ -45,11 +45,11 @@ let opts: PluginOptions = {}
 let platform: Platform = 'win32'
 let root = ''
 let tmp = ''
-let session = ''
 let job: Job | undefined
 let poll: { cancel: () => void } | undefined
 let expiry: { cancel: () => void } | undefined
-// voice mode: off at every session start, `/speak on|off` flips it for this session only
+// voice mode: off at every session start and after a /clear; `/speak on|off` flips it for this
+// session only
 let voice = false
 // the id of the turn `/speak ask`'s prompt started: its answer is read even when voice mode is off
 let askTurnId: string | undefined
@@ -194,6 +194,8 @@ const speak = async ($: EngineInterface, text: string, gate: boolean): Promise<s
   const playsRemotely = platform === 'linux' && remote !== 'off' && (remote !== 'auto' || !!(await $.env.get('SSH_CONNECTION')))
   if (!key && !playsRemotely) return `speak: no ${engine} key. Set it under /config (speak) or export ${DEFAULTS[engine].envKey}.`
   await stop($)
+  // read here, not kept from session.start: a /clear goes on under a new id with no session.start
+  const session = await $.session.id().catch(() => 'nosession')
   const now = await $.clock.now()
   const base = `${tmp}/claude-speak-${session.slice(0, 8)}-${now}`
   job = { base, n: chunks.length, startedAt: now, state: starting(chunks.length) }
@@ -236,7 +238,6 @@ export const register: Register = (on, options) => {
     platform = (await $.env.get('OS')) === 'Windows_NT' ? 'win32' : 'linux'
     root = pluginRoot((import.meta as { url?: string }).url ?? '')
     tmp = tempDirOf(platform, await $.env.get('TEMP'), await $.env.get('XDG_RUNTIME_DIR'))
-    session = await $.session.id().catch(() => 'nosession')
     await writeLauncher($).catch(err => $.ui.log(`speak: launcher not written: ${err}`))
     await $.command.register({
       name: 'speak',
@@ -253,10 +254,13 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  // /clear drops the conversation, so the reading and its band go with it. session.start does not
-  // fire on /clear, hence the command hook.
-  on('command.run', { command: 'clear' }, async ($, e, next) => {
-    await stop($)
+  // A clear (typed /clear or the desktop app's) ends this session and goes on under a new id with
+  // no session.start: the reading and its band go, and voice mode is off again, as at every start.
+  on('session.end', async ($, e, next) => {
+    if (e.reason === 'clear') {
+      voice = false
+      await stop($)
+    }
     return next(e)
   })
 
