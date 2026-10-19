@@ -90,7 +90,8 @@ environment variable, never on disk.
 Develop with `claude --plugin-dir speak-mod` (`--debug` names what the engine
 refused); `claude plugin validate speak-mod` shows what the module hooks and
 calls; `npx -p typescript tsc -p speak-mod/tsconfig.json` typechecks against
-the declarations `/plugin-types` writes into `speak-mod/.claude/types`.
+the declarations Claude Code writes into `speak-mod/.claude-plugin/types` each
+time a session loads the mod. Load it once after a Claude Code update.
 
 ## Playing on the machine you connected from
 
