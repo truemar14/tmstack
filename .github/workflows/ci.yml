@@ -68,3 +68,14 @@ jobs:
           if ((Test-Path "$s\demo") -or -not (Test-Path "$s\mine") -or -not (Test-Path "$s\theirs")) { exit 1 }
           if (-not (Test-Path "$HOME\.agents\skills\demo")) { exit 1 }
         shell: pwsh
+      # The Windows player as it runs, under Windows PowerShell 5.1: the script parses and its mixer
+      # helper compiles. A compile error would otherwise show only as a line in the player's log.
+      - run: |
+          $errs = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD\speak-mod\player\win.ps1", [ref]$null, [ref]$errs) | Out-Null
+          if ($errs) { $errs; exit 1 }
+          $src = [regex]::Match((Get-Content speak-mod\player\win.ps1 -Raw), "Add-Type -TypeDefinition @'\r?\n([\s\S]*?)\r?\n'@").Groups[1].Value
+          if (-not $src) { 'no mixer source found'; exit 1 }
+          Add-Type -TypeDefinition $src
+          if (-not ('SpeakAudio.Mixer' -as [type])) { exit 1 }
+        shell: powershell

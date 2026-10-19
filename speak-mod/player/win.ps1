@@ -169,21 +169,24 @@ function Stop-Playing { Exit-Playing; Remove-Item $readyFlag -ErrorAction Silent
 # Every other app playing on the default output is faded to $duckLevel of its volume before the first
 # clip, through the per-app mixer (Core Audio sessions), and faded back by the last live player. In
 # "pause" mode media apps are then paused through Windows' media-session API (the volume flyout's
-# play/pause), and resumed before the fade back up. The volumes as they were, by process id, and the
-# paused apps' ids are kept in files, so the podcast does not blip back on between two replies and a
-# player that died mid-reply is repaired by the next one.
+# play/pause), and resumed before the fade back up. The volumes as they were, by the app's executable
+# path, and the paused apps' ids are kept in files, so the podcast does not blip back on between two
+# replies and a player that died mid-reply is repaired by the next one. A path, unlike a process id,
+# still names the same app after it restarts or the machine reboots, and never an unrelated one.
 $duckLevel = 1 / 12
 $duckFile = Join-Path $env:TEMP 'claude-speak.duck.json'
 $mediaFile = Join-Path $env:TEMP 'claude-speak.media.json'
-# Compiles the mixer helper once per player, on first need: before a duck, and before restoring
-# volumes this or another player saved, whatever the mode.
+# Compiles the mixer helper once per player, which takes about a second: while clip 0 is fetched (see
+# Play-Round), and before restoring volumes this or another player saved, whatever the mode.
 function Use-Mixer {
   if ('SpeakAudio.Mixer' -as [type]) { return }
   try {
     Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 namespace SpeakAudio {
   [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] class MMDeviceEnumerator {}
   [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -220,6 +223,15 @@ namespace SpeakAudio {
   }
   // The per-app mixer of the default output device.
   public static class Mixer {
+    [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
+    [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr handle);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool QueryFullProcessImageName(IntPtr handle, int flags, StringBuilder name, ref int size);
+    // A process's executable path in lower case; null when it is gone or cannot be read.
+    static string PathOf(uint pid) {
+      var h = OpenProcess(0x1000, false, pid); if (h == IntPtr.Zero) return null;   // PROCESS_QUERY_LIMITED_INFORMATION
+      try { var b = new StringBuilder(1024); int n = b.Capacity; return QueryFullProcessImageName(h, 0, b, ref n) ? b.ToString().ToLowerInvariant() : null; }
+      finally { CloseHandle(h); }
+    }
     static List<IAudioSessionControl2> Sessions() {
       var list = new List<IAudioSessionControl2>();
       var en = (IMMDeviceEnumerator)new MMDeviceEnumerator();
@@ -231,23 +243,28 @@ namespace SpeakAudio {
       for (int i = 0; i < n; i++) { IAudioSessionControl2 s; if (e.GetSession(i, out s) == 0) list.Add(s); }
       return list;
     }
-    // Volume by process id of every app sounding now, other than self and the system sounds.
-    public static Dictionary<uint, float> Playing(uint self) {
-      var d = new Dictionary<uint, float>();
+    // Volume by executable path of every app sounding now, other than the system sounds and this
+    // player's own executable, so no player ducks its own voice or the next player's. An app whose
+    // path cannot be read is left alone.
+    public static Dictionary<string, float> Playing() {
+      var self = PathOf((uint)Process.GetCurrentProcess().Id);
+      var d = new Dictionary<string, float>();
       foreach (var s in Sessions()) {
         int state; uint pid; float v;
         if (s.IsSystemSoundsSession() == 0 || s.GetState(out state) != 0 || state != 1) continue;   // 1: active
-        if (s.GetProcessId(out pid) != 0 || pid == self || pid == 0) continue;
-        if (((ISimpleAudioVolume)s).GetMasterVolume(out v) == 0 && !d.ContainsKey(pid)) d[pid] = v;
+        if (s.GetProcessId(out pid) != 0 || pid == 0) continue;
+        var path = PathOf(pid); if (path == null || path == self) continue;
+        if (((ISimpleAudioVolume)s).GetMasterVolume(out v) == 0 && !d.ContainsKey(path)) d[path] = v;
       }
       return d;
     }
-    // Sets every session of these processes to its saved volume times factor.
-    public static void Scale(Dictionary<uint, float> volumes, float factor) {
+    // Sets every session of these apps to its saved volume times factor.
+    public static void Scale(Dictionary<string, float> volumes, float factor) {
       var ctx = Guid.Empty;
       foreach (var s in Sessions()) {
-        uint pid; if (s.GetProcessId(out pid) != 0 || !volumes.ContainsKey(pid)) continue;
-        ((ISimpleAudioVolume)s).SetMasterVolume(Math.Max(0f, Math.Min(1f, volumes[pid] * factor)), ref ctx);
+        uint pid; if (s.GetProcessId(out pid) != 0) continue;
+        var path = PathOf(pid); if (path == null || !volumes.ContainsKey(path)) continue;
+        ((ISimpleAudioVolume)s).SetMasterVolume(Math.Max(0f, Math.Min(1f, volumes[path] * factor)), ref ctx);
       }
     }
   }
@@ -255,19 +272,18 @@ namespace SpeakAudio {
 '@
   } catch { Log "mixer unavailable: $($_.Exception.Message)" }
 }
-if ($script:winrt -and $media -ne 'off') { Use-Mixer }
 # Fades the saved volumes from one share of themselves to another over about a third of a second.
 function Fade-Volumes($volumes, [double]$from, [double]$to) {
   for ($k = 1; $k -le 8; $k++) {
     [SpeakAudio.Mixer]::Scale($volumes, [single]($from + ($to - $from) * $k / 8)); Start-Sleep -Milliseconds 40
   }
 }
-# The volumes saved before the duck, by process id; empty when nothing is ducked.
+# The volumes saved before the duck, by executable path; empty when nothing is ducked.
 function Read-Duck {
-  $d = New-Object 'System.Collections.Generic.Dictionary[uint32,single]'
+  $d = New-Object 'System.Collections.Generic.Dictionary[string,single]'
   if (Test-Path $duckFile) {
     $saved = Get-Content $duckFile -Raw | ConvertFrom-Json
-    foreach ($p in $saved.PSObject.Properties) { $d[[uint32]$p.Name] = [single]$p.Value }
+    foreach ($p in $saved.PSObject.Properties) { $d[$p.Name] = [single]$p.Value }
   }
   return ,$d
 }
@@ -287,11 +303,11 @@ function Suspend-Media {
     # Volumes already saved win: a player before this one left those apps ducked, and they stay
     # where they are. Only apps not ducked yet fade down.
     $volumes = Read-Duck
-    $fresh = New-Object 'System.Collections.Generic.Dictionary[uint32,single]'
-    $playing = [SpeakAudio.Mixer]::Playing([uint32]$PID)
+    $fresh = New-Object 'System.Collections.Generic.Dictionary[string,single]'
+    $playing = [SpeakAudio.Mixer]::Playing()
     foreach ($id in $playing.Keys) { if (-not $volumes.ContainsKey($id)) { $volumes[$id] = $playing[$id]; $fresh[$id] = $playing[$id] } }
     if ($volumes.Count) {
-      $out = @{}; foreach ($id in $volumes.Keys) { $out["$id"] = $volumes[$id] }
+      $out = @{}; foreach ($id in $volumes.Keys) { $out[$id] = $volumes[$id] }
       ConvertTo-Json $out -Compress | Set-Content $duckFile
       if ($fresh.Count) { Fade-Volumes $fresh 1 $duckLevel; Log "ducked: $($fresh.Keys -join ', ')" }
     }
@@ -433,8 +449,10 @@ function Play-Round([int]$first = 0, [double]$firstAt = 0) {
       if ($j -lt $n -and -not $tasks.ContainsKey($j) -and -not (Test-Path "$base-$j.mp3")) { $tasks[$j] = Fetch $j; Log "fetch $j started" }
     }
     if (-not $started) {
-      # Wait for our turn (focused session + lock) while clip 0 is fetched, then pause the media; the
-      # ~1 s of setup hides behind the ~3 s fetch, and a beat of silence is fine.
+      # Compile the mixer, then wait for our turn (focused session + lock), while clip 0 is fetched;
+      # then turn other audio down. The ~1 s of setup hides behind the ~3 s fetch, and a beat of
+      # silence is fine.
+      if ($script:winrt -and $media -ne 'off') { Use-Mixer }
       if (-not (Start-Playing)) { $status = 'stopped'; break }
       $started = $true; Suspend-Media
     }
