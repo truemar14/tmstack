@@ -1,7 +1,7 @@
 # win.ps1 - Windows player for the speak mod. One detached, hidden Windows PowerShell 5.1 (STA) process
 # per reply, started by the hooks module (see hooks/protocol.ts):
 #   powershell -NoProfile -STA -ExecutionPolicy Bypass -File win.ps1 <base>.json
-# The job file { base, chunks, engine, voice, speed, model, gate, session, mediaPause, remote } is read
+# The job file { base, chunks, engine, voice, speed, model, gate, session, media, remote } is read
 # once and deleted. The engine's key comes from the environment: SPEAK_API_KEY (the module sets it when
 # it starts this process), else FISH_API_KEY or ELEVENLABS_API_KEY.
 #
@@ -13,8 +13,9 @@
 # What happens: the text's clips are fetched from the configured engine two ahead of the one playing (Fish
 # generates at ~4x realtime, so the first short clip plays after ~3 s). In gated mode the reply is
 # held silently until its session is the focused Herdr pane (dropped after 15 min). Players take
-# turns across sessions through a lock, so voices never overlap. Media apps that were playing are
-# paused before the first clip and resumed by the last player to finish. After the reply the clips
+# turns across sessions through a lock, so voices never overlap. Before the first clip other audio is
+# faded down to a twelfth (media "duck") or faded out and paused ("pause"), and the last player to finish
+# brings it back. After the reply the clips
 # are kept 20 min for a replay ("replay", or "back" for the last 5 s), then everything is deleted.
 # Log: %TEMP%\claude-speak-mod.log
 # Stdio mode (-Stdio, no job file): the job arrives as the first line of standard input, commands as
@@ -25,8 +26,8 @@ param([string]$JobFile, [switch]$Stdio)
 $ErrorActionPreference = 'Continue'
 # Runs under Windows PowerShell 5.1 (file mode: it has the WinRT media-session API for pausing media
 # apps) or PowerShell 7 (stdio mode over SSH: 5.1 reads only the first line of the stdin the Windows
-# SSH server hands it, 7 streams; media pausing is off there anyway, an SSH login session cannot see
-# the desktop's media sessions).
+# SSH server hands it, 7 streams; other audio is left alone there anyway, an SSH login session cannot
+# see the desktop's audio sessions).
 $script:winrt = $PSVersionTable.PSEdition -ne 'Core'
 Add-Type -AssemblyName PresentationCore, PresentationFramework, WindowsBase
 if ($script:winrt) { Add-Type -AssemblyName System.Runtime.WindowsRuntime }
@@ -60,7 +61,7 @@ if ($Stdio) {
 $chunks = @($job.chunks); $n = $chunks.Count
 $sessionId = [string]$job.session
 $gateFocus = [bool]$job.gate
-$mediaPause = [bool]$job.mediaPause
+$media = [string]$job.media; if ($media -notin 'duck', 'pause', 'off') { $media = 'duck' }
 $stateFile = "$base.state"; $cmdFile = "$base.cmd"; $readyFlag = "$base.ready"
 $log = Join-Path $env:TEMP 'claude-speak-mod.log'
 if ((Get-Item $log -ErrorAction SilentlyContinue).Length -gt 200KB) { Remove-Item $log -ErrorAction SilentlyContinue }
@@ -164,11 +165,112 @@ function Start-Playing {
 }
 function Stop-Playing { Exit-Playing; Remove-Item $readyFlag -ErrorAction SilentlyContinue }
 
-# --- media ---------------------------------------------------------------------------------------
-# Windows' media-session API (the volume flyout's play/pause): every session that is Playing is
-# paused before the first clip and its app id kept in claude-speak.media.json; the last live player
-# resumes them, so the podcast does not blip back on between two replies.
+# --- other audio ---------------------------------------------------------------------------------
+# Every other app playing on the default output is faded to $duckLevel of its volume before the first
+# clip, through the per-app mixer (Core Audio sessions), and faded back by the last live player. In
+# "pause" mode media apps are then paused through Windows' media-session API (the volume flyout's
+# play/pause), and resumed before the fade back up. The volumes as they were, by process id, and the
+# paused apps' ids are kept in files, so the podcast does not blip back on between two replies and a
+# player that died mid-reply is repaired by the next one.
+$duckLevel = 1 / 12
+$duckFile = Join-Path $env:TEMP 'claude-speak.duck.json'
 $mediaFile = Join-Path $env:TEMP 'claude-speak.media.json'
+# Compiles the mixer helper once per player, on first need: before a duck, and before restoring
+# volumes this or another player saved, whatever the mode.
+function Use-Mixer {
+  if ('SpeakAudio.Mixer' -as [type]) { return }
+  try {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+namespace SpeakAudio {
+  [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] class MMDeviceEnumerator {}
+  [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IMMDeviceEnumerator {
+    int NotImpl1();
+    [PreserveSig] int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice device);
+  }
+  [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IMMDevice {
+    [PreserveSig] int Activate(ref Guid iid, int clsCtx, IntPtr activationParams, [MarshalAs(UnmanagedType.IUnknown)] out object o);
+  }
+  [ComImport, Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IAudioSessionManager2 {
+    int NotImpl1(); int NotImpl2();
+    [PreserveSig] int GetSessionEnumerator(out IAudioSessionEnumerator e);
+  }
+  [ComImport, Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IAudioSessionEnumerator {
+    [PreserveSig] int GetCount(out int n);
+    [PreserveSig] int GetSession(int i, out IAudioSessionControl2 s);
+  }
+  [ComImport, Guid("bfb7ff88-7239-4fc9-8fa2-07c950be9c6d"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IAudioSessionControl2 {
+    [PreserveSig] int GetState(out int state);
+    int NotImpl1(); int NotImpl2(); int NotImpl3(); int NotImpl4(); int NotImpl5(); int NotImpl6(); int NotImpl7(); int NotImpl8();
+    int NotImpl9(); int NotImpl10();
+    [PreserveSig] int GetProcessId(out uint pid);
+    [PreserveSig] int IsSystemSoundsSession();
+  }
+  [ComImport, Guid("87CE5498-68D6-44E5-9215-6DA47EF883D8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface ISimpleAudioVolume {
+    [PreserveSig] int SetMasterVolume(float level, ref Guid context);
+    [PreserveSig] int GetMasterVolume(out float level);
+  }
+  // The per-app mixer of the default output device.
+  public static class Mixer {
+    static List<IAudioSessionControl2> Sessions() {
+      var list = new List<IAudioSessionControl2>();
+      var en = (IMMDeviceEnumerator)new MMDeviceEnumerator();
+      IMMDevice dev; if (en.GetDefaultAudioEndpoint(0, 1, out dev) != 0) return list;   // render, multimedia
+      var iid = typeof(IAudioSessionManager2).GUID; object o;
+      if (dev.Activate(ref iid, 23, IntPtr.Zero, out o) != 0) return list;              // CLSCTX_ALL
+      IAudioSessionEnumerator e; if (((IAudioSessionManager2)o).GetSessionEnumerator(out e) != 0) return list;
+      int n; e.GetCount(out n);
+      for (int i = 0; i < n; i++) { IAudioSessionControl2 s; if (e.GetSession(i, out s) == 0) list.Add(s); }
+      return list;
+    }
+    // Volume by process id of every app sounding now, other than self and the system sounds.
+    public static Dictionary<uint, float> Playing(uint self) {
+      var d = new Dictionary<uint, float>();
+      foreach (var s in Sessions()) {
+        int state; uint pid; float v;
+        if (s.IsSystemSoundsSession() == 0 || s.GetState(out state) != 0 || state != 1) continue;   // 1: active
+        if (s.GetProcessId(out pid) != 0 || pid == self || pid == 0) continue;
+        if (((ISimpleAudioVolume)s).GetMasterVolume(out v) == 0 && !d.ContainsKey(pid)) d[pid] = v;
+      }
+      return d;
+    }
+    // Sets every session of these processes to its saved volume times factor.
+    public static void Scale(Dictionary<uint, float> volumes, float factor) {
+      var ctx = Guid.Empty;
+      foreach (var s in Sessions()) {
+        uint pid; if (s.GetProcessId(out pid) != 0 || !volumes.ContainsKey(pid)) continue;
+        ((ISimpleAudioVolume)s).SetMasterVolume(Math.Max(0f, Math.Min(1f, volumes[pid] * factor)), ref ctx);
+      }
+    }
+  }
+}
+'@
+  } catch { Log "mixer unavailable: $($_.Exception.Message)" }
+}
+if ($script:winrt -and $media -ne 'off') { Use-Mixer }
+# Fades the saved volumes from one share of themselves to another over about a third of a second.
+function Fade-Volumes($volumes, [double]$from, [double]$to) {
+  for ($k = 1; $k -le 8; $k++) {
+    [SpeakAudio.Mixer]::Scale($volumes, [single]($from + ($to - $from) * $k / 8)); Start-Sleep -Milliseconds 40
+  }
+}
+# The volumes saved before the duck, by process id; empty when nothing is ducked.
+function Read-Duck {
+  $d = New-Object 'System.Collections.Generic.Dictionary[uint32,single]'
+  if (Test-Path $duckFile) {
+    $saved = Get-Content $duckFile -Raw | ConvertFrom-Json
+    foreach ($p in $saved.PSObject.Properties) { $d[[uint32]$p.Name] = [single]$p.Value }
+  }
+  return ,$d
+}
 function Get-MediaSessions {
   $null = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media.Control, ContentType=WindowsRuntime]
   if (-not $script:asTask) {
@@ -180,16 +282,32 @@ function Get-MediaSessions {
 }
 function Await($op, $type) { $t = $script:asTask.MakeGenericMethod($type).Invoke($null, @($op)); $t.Wait(-1) | Out-Null; $t.Result }
 function Suspend-Media {
-  if (-not $mediaPause -or -not $script:winrt) { return }
+  if ($media -eq 'off' -or -not $script:winrt) { return }
   try {
-    $ids = @(); if (Test-Path $mediaFile) { $ids = @(Get-Content $mediaFile -Raw | ConvertFrom-Json | ForEach-Object { $_ }) }
-    foreach ($s in Get-MediaSessions) {
-      if ("$($s.GetPlaybackInfo().PlaybackStatus)" -ne 'Playing') { continue }
-      Await ($s.TryPauseAsync()) ([bool]) | Out-Null
-      $ids += $s.SourceAppUserModelId; Log "paused media: $($s.SourceAppUserModelId)"
+    # Volumes already saved win: a player before this one left those apps ducked, and they stay
+    # where they are. Only apps not ducked yet fade down.
+    $volumes = Read-Duck
+    $fresh = New-Object 'System.Collections.Generic.Dictionary[uint32,single]'
+    $playing = [SpeakAudio.Mixer]::Playing([uint32]$PID)
+    foreach ($id in $playing.Keys) { if (-not $volumes.ContainsKey($id)) { $volumes[$id] = $playing[$id]; $fresh[$id] = $playing[$id] } }
+    if ($volumes.Count) {
+      $out = @{}; foreach ($id in $volumes.Keys) { $out["$id"] = $volumes[$id] }
+      ConvertTo-Json $out -Compress | Set-Content $duckFile
+      if ($fresh.Count) { Fade-Volumes $fresh 1 $duckLevel; Log "ducked: $($fresh.Keys -join ', ')" }
     }
-    if ($ids) { ConvertTo-Json @($ids | Select-Object -Unique) -Compress | Set-Content $mediaFile }
-  } catch { Log "media pause failed: $($_.Exception.Message)" }
+  } catch { Log "duck failed: $($_.Exception.Message)" }
+  if ($media -eq 'pause') {
+    try {
+      $ids = @(); if (Test-Path $mediaFile) { $ids = @(Get-Content $mediaFile -Raw | ConvertFrom-Json | ForEach-Object { $_ }) }
+      foreach ($s in Get-MediaSessions) {
+        if ("$($s.GetPlaybackInfo().PlaybackStatus)" -ne 'Playing') { continue }
+        Await ($s.TryPauseAsync()) ([bool]) | Out-Null
+        $ids += $s.SourceAppUserModelId; Log "paused media: $($s.SourceAppUserModelId)"
+      }
+      if ($ids) { ConvertTo-Json @($ids | Select-Object -Unique) -Compress | Set-Content $mediaFile }
+    } catch { Log "media pause failed: $($_.Exception.Message)" }
+  }
+  Start-Sleep -Milliseconds 150   # a beat between the fade and the voice
 }
 # True if another live player is past its focus gate (a .ready file holding a live PID): it speaks next.
 function Test-OtherPlayers {
@@ -202,17 +320,28 @@ function Test-OtherPlayers {
   return $false
 }
 function Resume-Media {
-  if (-not $script:winrt -or -not (Test-Path $mediaFile)) { return }
-  if (Test-OtherPlayers) { Log 'media left paused for the next player'; return }
-  try {
-    $ids = @(Get-Content $mediaFile -Raw | ConvertFrom-Json | ForEach-Object { $_ })
-    foreach ($s in Get-MediaSessions) {
-      if ($ids -contains $s.SourceAppUserModelId -and "$($s.GetPlaybackInfo().PlaybackStatus)" -eq 'Paused') {
-        Await ($s.TryPlayAsync()) ([bool]) | Out-Null; Log "resumed media: $($s.SourceAppUserModelId)"
+  if (-not $script:winrt -or -not ((Test-Path $mediaFile) -or (Test-Path $duckFile))) { return }
+  if (Test-OtherPlayers) { Log 'other audio left down for the next player'; return }
+  Start-Sleep -Milliseconds 250   # a beat after the voice before the music comes back
+  if (Test-Path $mediaFile) {
+    try {
+      $ids = @(Get-Content $mediaFile -Raw | ConvertFrom-Json | ForEach-Object { $_ })
+      foreach ($s in Get-MediaSessions) {
+        if ($ids -contains $s.SourceAppUserModelId -and "$($s.GetPlaybackInfo().PlaybackStatus)" -eq 'Paused') {
+          Await ($s.TryPlayAsync()) ([bool]) | Out-Null; Log "resumed media: $($s.SourceAppUserModelId)"
+        }
       }
-    }
-  } catch { Log "media resume failed: $($_.Exception.Message)" }
-  Remove-Item $mediaFile -ErrorAction SilentlyContinue
+    } catch { Log "media resume failed: $($_.Exception.Message)" }
+    Remove-Item $mediaFile -ErrorAction SilentlyContinue
+  }
+  if (Test-Path $duckFile) {
+    # The file goes only once the volumes are back: a failed restore leaves it for the next player.
+    try {
+      Use-Mixer
+      $volumes = Read-Duck; Fade-Volumes $volumes $duckLevel 1; Log "restored: $($volumes.Keys -join ', ')"
+      Remove-Item $duckFile -ErrorAction SilentlyContinue
+    } catch { Log "restore failed, volumes kept in $($duckFile): $($_.Exception.Message)" }
+  }
 }
 
 # --- playback ------------------------------------------------------------------------------------
@@ -340,7 +469,9 @@ function Play-Round([int]$first = 0, [double]$firstAt = 0) {
     $script:lens[$i] = $len; $done += $chunks[$i].Length
     Log "played $i ($([int]$len) ms)"
   }
-  if ($started) { Resume-Media }
+  # Also when this player never spoke: a stop while it waited for its turn still has to give back
+  # the audio the player before it left down for it.
+  Resume-Media
   Stop-Playing
   if ($failed -eq $n) { Set-Phase 'error' "$engine request failed (see claude-speak-mod.log)"; return 'stopped' }
   return $status

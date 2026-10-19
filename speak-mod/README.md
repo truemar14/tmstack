@@ -34,20 +34,21 @@ shelled out around it. Codex has no function hooks and no voice mode.
 - A new prompt stops this session's reading. Inside [Herdr](https://herdr.dev),
   a terminal workspace for agent sessions, a reply from a session that is not
   the focused pane is held until you switch to it. Voices
-  never overlap across sessions. On Windows, media apps that were playing are
-  paused for the duration.
+  never overlap across sessions. On Windows, other audio fades down to a twelfth
+  under the voice and back up after it. The `media` setting can instead fade
+  media apps out and pause them (`pause`), or leave audio alone (`off`).
 
 ## Files
 
 | Path | Role |
 |---|---|
-| `.claude-plugin/plugin.json` | Manifest and `userConfig` (engine; per-engine API key in secure storage, voice and model; speed, focus gate, media pause). |
+| `.claude-plugin/plugin.json` | Manifest and `userConfig` (engine; per-engine API key in secure storage, voice and model; speed, focus gate, what happens to other audio). |
 | `hooks/register.tsx` | The hooks module: `session.start`, `prompt.submit`, `tool.call` for the desktop recap, `turn.complete` with the Haiku summary, `command.run` for `/speak`, `ui.render` for the band. |
 | `hooks/speakable.ts` | Markdown to spoken text, clip splitting. |
 | `hooks/args.ts` | `/speak` argument parsing. |
 | `hooks/protocol.ts` | The file protocol with the player and the pure helpers around it. |
 | `hooks/band.tsx` | The band's tree: text marks on the terminal, the app's buttons and two SVGs in the desktop app. |
-| `player/win.ps1` | Windows player: Fish fetches two clips ahead, WPF MediaPlayer, Herdr focus gate, cross-session lock, media pausing, replay. |
+| `player/win.ps1` | Windows player: Fish fetches two clips ahead, WPF MediaPlayer, Herdr focus gate, cross-session lock, ducking or pausing other audio, replay. |
 | `player/linux.sh` | Linux player: same protocol over mpv's IPC socket (needs curl, python3, mpv). Hands over to `remote.sh` when the session came in over SSH. |
 | `player/remote.sh` | Drives the SSH client's own player in stdio mode and mirrors its state, so a box without speakers plays through the machine you sit at. |
 | `player/authorize-client.ps1` | One-time, elevated: authorizes a box's SSH key on this Windows machine so it can play here. |
@@ -101,8 +102,8 @@ to the client, runs that client's own player in stdio mode through the launcher
 the mod writes at `~/.claude/speak-player[.cmd]`, and mirrors its state lines
 into the usual state file. The client fetches the clips with its own keys, read from
 its environment or secrets file (the launcher starts the player directly, so a
-key set under `/config` on the client is not seen), and plays them with its
-own media pausing; only text and progress cross the network. The client is the address in `SSH_CONNECTION` (tmux keeps it current across
+key set under `/config` on the client is not seen), and plays them through
+its own speakers; only text and progress cross the network. The client is the address in `SSH_CONNECTION` (tmux keeps it current across
 re-attaches) or, when that peer is offline (a Herdr server keeps the address of
 whoever started it), the live SSH login from `who` whose Tailscale peer is
 online. It is named through `tailscale whois`; `~/.ssh/config` on the box
@@ -120,8 +121,8 @@ you already trust with this one. `remote_playback` can also be `off`
 Two Windows details. The launcher runs the player under PowerShell 7 (`pwsh`)
 when present: Windows PowerShell 5.1 reads only the first line of the stdin
 the Windows SSH server hands a command, so commands would never arrive.
-And media pausing is off for remote replies, since an SSH login session cannot
-see the desktop's media sessions.
+And other audio is left alone for remote replies, since an SSH login session
+cannot see the desktop's audio sessions.
 
 ## Platforms
 

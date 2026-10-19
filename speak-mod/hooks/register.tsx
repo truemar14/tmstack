@@ -18,7 +18,7 @@ import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 import { HELP, parseArgs } from './args.ts'
 import { bandTree, desktopBandTree } from './band.tsx'
 import {
-  ENGINES, isEngine, OVER, parseState, pluginRoot, spawnArgv, starting, tempDirOf,
+  ENGINES, isEngine, mediaMode, OVER, parseState, pluginRoot, spawnArgv, starting, tempDirOf,
   type Engine, type Job, type JobSpec, type Platform, type PlayerCommand, type PlayerState,
 } from './protocol.ts'
 import { splitChunks, toSpeakable } from './speakable.ts'
@@ -206,7 +206,7 @@ const speak = async ($: EngineInterface, text: string, gate: boolean): Promise<s
       speed: num('speed', 1.05),
       model: str(`${engine}_model`, DEFAULTS[engine].model),
       gate: gate && bool('focus_gate', true),
-      mediaPause: bool('media_pause', true),
+      media: mediaMode(str('media', 'duck')),
       remote: str('remote_playback', 'auto') || 'auto',
     }, key)
   } catch (err) {

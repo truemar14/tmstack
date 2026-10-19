@@ -29,6 +29,11 @@ export type Engine = 'fish' | 'elevenlabs'
 export const ENGINES: readonly Engine[] = ['fish', 'elevenlabs']
 export const isEngine = (value: unknown): value is Engine => value === 'fish' || value === 'elevenlabs'
 
+// What the player does to other audio while it speaks (Windows): duck it, fade and pause it, or
+// leave it alone. Anything else, such as a typo in the setting, falls back to duck.
+export type MediaMode = 'duck' | 'pause' | 'off'
+export const mediaMode = (value: string): MediaMode => (value === 'pause' || value === 'off' ? value : 'duck')
+
 export type JobSpec = {
   base: string
   chunks: string[]
@@ -38,7 +43,7 @@ export type JobSpec = {
   model: string // Fish model header or ElevenLabs model_id
   gate: boolean // hold the reply until its session is the focused Herdr pane
   session: string
-  mediaPause: boolean
+  media: MediaMode
   // where to play: 'auto' (on the SSH client when this session came in over SSH, else here),
   // 'off' (always here), or an SSH host to always play on. Read by the Linux player.
   remote: string

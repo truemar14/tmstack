@@ -6,7 +6,7 @@
 # commands as the lines after it, and the player's state lines come back up; this shim mirrors them
 # into the same <base>.state / <base>.cmd files the module reads, so nothing else changes. Only text
 # and a few bytes of progress cross the network: the clips are fetched and played on the client,
-# with its keys, its media pausing and its speakers.
+# with its keys and its speakers.
 #
 # Which client: the job's "remote" field when it names a host; else the SSH client of this session.
 # That is the address in SSH_CONNECTION (tmux keeps it current across re-attaches), but a process
@@ -27,7 +27,7 @@ j = json.load(open(sys.argv[1], encoding='utf-8'))
 print('BASE=' + shlex.quote(j['base']))
 print('REMOTE=' + shlex.quote(j.get('remote') or 'auto'))
 j['gate'] = False        # the client's Herdr does not know this session; play right away
-j['mediaPause'] = False  # an SSH login session cannot see the desktop's media sessions
+j['media'] = 'off'       # an SSH login session cannot see the desktop's audio sessions
 print('JOBLINE=' + shlex.quote(json.dumps(j)))
 PY
 )"
