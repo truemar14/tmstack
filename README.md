@@ -25,11 +25,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $HOME\Work\tmstack\install.p
 ```
 
 The installer symlinks every skill allowed on this platform into
-`~/.claude/skills/` and `~/.codex/skills/`, for each of the two harnesses
-present on the machine. Run it again after pulling. It re-points its own
-links, removes its links to skills that no longer exist, and never overwrites
-a real skill directory or a link it did not make. `install.ps1` does the same
-on Windows with junctions.
+`~/.claude/skills/` for Claude Code and `~/.agents/skills/` for Codex, for
+each of the two harnesses present on the machine. Run it again after pulling.
+It re-points its own links, removes its links to skills that no longer exist,
+and never overwrites a real skill directory or a link it did not make. It also
+removes the links earlier versions made in `~/.codex/skills/`, the old Codex
+location. `install.ps1` does the same on Windows with junctions.
 
 Give either installer a path to install another repo with the same layout,
 such as a private one:
