@@ -1,8 +1,30 @@
 {
   "name": "tmstack",
   "owner": { "name": "Mariyan Damyanov" },
-  "metadata": { "description": "Plugins of function hooks (Claude Mods). Add this checkout as a directory marketplace: claude plugin marketplace add <path to tmstack>" },
+  "metadata": { "description": "The tmstack skills as one plugin, for sessions without the installer's links (cloud sessions, Projects), and plugins of function hooks (Claude Mods). Add with: claude plugin marketplace add truemar14/tmstack, or a local checkout's path" },
   "plugins": [
+    {
+      "name": "tmstack",
+      "source": "./",
+      "description": "Every skill in this repo. For cloud sessions and Projects; machines that run the installer already have them.",
+      "license": "MIT",
+      "skills": [
+        "./babysit-pr",
+        "./catch-up",
+        "./diagnosing-bugs",
+        "./domain-modeling",
+        "./file-pr",
+        "./file-upload",
+        "./frontend-design",
+        "./grilling",
+        "./html-communication",
+        "./review-loop",
+        "./test-handoff",
+        "./unslop",
+        "./wait-what",
+        "./writing-for-agents"
+      ]
+    },
     {
       "name": "speak",
       "source": "./speak-mod",
