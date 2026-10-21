@@ -1,7 +1,7 @@
 {
   "name": "tmstack",
   "owner": { "name": "Mariyan Damyanov" },
-  "metadata": { "description": "The tmstack skills as one plugin, for sessions without the installer's links (cloud sessions, Projects), and plugins of function hooks (Claude Mods). Add with: claude plugin marketplace add truemar14/tmstack, or a local checkout's path" },
+  "metadata": { "description": "The tmstack skills as one plugin, for sessions without the installer's links (cloud sessions, Projects),. Add with: claude plugin marketplace add truemar14/tmstack, or a local checkout's path" },
   "plugins": [
     {
       "name": "tmstack",
@@ -27,12 +27,6 @@
         "./wait-what",
         "./writing-for-agents"
       ]
-    },
-    {
-      "name": "speak",
-      "source": "./speak-mod",
-      "description": "Replies read aloud with a Fish Audio or ElevenLabs voice; /speak; playback controls above the prompt.",
-      "license": "MIT"
     }
   ]
 }

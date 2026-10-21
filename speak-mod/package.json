@@ -1,9 +1,0 @@
-{
-  "name": "speak-mod",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "test": "node --test \"tests/*.spec.ts\"",
-    "typecheck": "tsc -p tsconfig.json"
-  }
-}

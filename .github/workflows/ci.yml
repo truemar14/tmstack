@@ -8,15 +8,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm test
-        working-directory: speak-mod
-      # The typecheck needs declarations Claude Code writes only when a session loads the mod, so CI validates
-      # the plugin instead: the manifest, the hooks file, and that every hook module parses.
-      - run: npx -y @anthropic-ai/claude-code plugin validate speak-mod
       # The marketplace, and the tmstack plugin's skills at the repo root.
       - run: npx -y @anthropic-ai/claude-code plugin validate .
-      # The hooks against the engine itself: tests/engine/*.test.tsx.
-      - run: npx -y @anthropic-ai/claude-code plugin test speak-mod
       - run: mkdir -p "$HOME/.claude" "$HOME/.codex" && ./install.sh --dry-run
         env:
           HOME: ${{ runner.temp }}/home

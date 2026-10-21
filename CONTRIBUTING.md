@@ -9,7 +9,7 @@ it for the skills, and keep your own instructions and machine skills next to
 it.
 
 Every skill follows `writing-for-agents/SKILL.md`. Before opening a PR, run
-`npm test` in `speak-mod/`, `./install.sh --dry-run` and `./check-skills.sh`.
+`./install.sh --dry-run` and `./check-skills.sh`.
 
 `check-skills.sh` lints each skill's frontmatter. It also fails on any term
 from the `PRIVATE_NAMES` environment variable, one term per line, found in a
