@@ -4,18 +4,15 @@
 # layout is checked with this same script, as install.sh installs it.
 # For every top-level directory with a SKILL.md: the frontmatter opens on line 1 and closes, `name`
 # matches the directory, `description` is not empty, and metadata.platform and metadata.harness hold
-# only values install.sh and install.ps1 understand. When the repo has a marketplace
-# (.claude-plugin/marketplace.json), the skill must be listed in its plugin. Then, when PRIVATE_NAMES
-# is set (one term per line, matched as whole words, any case), no tracked file may contain any of
-# its terms. The terms live outside this repo, in a CI secret, because listing them here would
-# publish them.
+# only values install.sh and install.ps1 understand. Then, when PRIVATE_NAMES is set (one term per
+# line, matched as whole words, any case), no tracked file may contain any of its terms. The terms
+# live outside this repo, in a CI secret, because listing them here would publish them.
 # Usage: ./check-skills.sh [<repo>]   (exits 1 and prints one line per problem; run it from anywhere)
 set -euo pipefail
 usage() { echo "usage: $0 [<repo>]" >&2; exit 2; }
 (( $# <= 1 )) || usage
 [[ -z ${1:-} || -d ${1:-} ]] || { echo "no such directory: $1" >&2; exit 2; }
 REPO=$(cd "${1:-$(dirname "${BASH_SOURCE[0]}")}" && pwd)
-MARKETPLACE=$REPO/.claude-plugin/marketplace.json
 PLATFORMS=" win32 linux darwin "; HARNESSES=" claude codex "
 fail=0
 problem() { echo "$1"; fail=1; }
@@ -42,9 +39,6 @@ for skill in "$REPO"/*/SKILL.md; do
   for v in $(field "$skill" harness); do
     [[ $HARNESSES == *" $v "* ]] || problem "$rel: unknown harness '$v' (expected one of${HARNESSES% })"
   done
-  # The repo's plugin lists its skills by path; `claude plugin validate` catches a listed path that is gone.
-  [[ ! -f $MARKETPLACE ]] || grep -qF "\"./$name\"" "$MARKETPLACE" ||
-    problem "$rel: not in the plugin's skills in .claude-plugin/marketplace.json"
 done
 
 if [[ -n ${PRIVATE_NAMES:-} ]]; then

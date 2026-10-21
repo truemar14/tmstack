@@ -1,7 +1,6 @@
 # TMStack
 
-Skills for Claude Code and Codex, plus a Claude Code plugin of them, shared
-across every machine I work on. Each top-level directory with a `SKILL.md` is one
+Skills for Claude Code and Codex, shared across every machine I work on. Each top-level directory with a `SKILL.md` is one
 skill. The files inside are the skill's own scripts.
 
 The repo holds only the general skills. Personal instructions (`AGENTS.md`),
@@ -98,27 +97,22 @@ dashes, so it is the one file exempt from the house style in
 skill keeps the source notice in its `LICENSE.txt`. Everything else is MIT,
 see `LICENSE`.
 
-## Plugins
+## Cloud sessions
 
-### Skills in cloud sessions and Projects
+A cloud session runs on a fresh container that never sees your machine's
+`~/.claude`, but it reads the container's own, and the environment's setup
+script runs before Claude Code starts. So the install is the same as on a
+machine, done by the setup script:
 
-A cloud session, or a cloud thread in a Claude Project, never reads
-`~/.claude`, so the installer's links do not reach it. The `tmstack` plugin
-carries the same skills there. Add it in a Project's settings under Plugins,
-from the GitHub marketplace `truemar14/tmstack`. In a session that takes
-plugin commands:
-
-```sh
-claude plugin marketplace add truemar14/tmstack
-claude plugin install tmstack@tmstack
+```bash
+mkdir -p ~/.claude ~/projects
+git clone --depth 1 https://github.com/truemar14/tmstack ~/projects/tmstack
+~/projects/tmstack/install.sh
 ```
 
-Its skills are named `tmstack:<skill>`, such as `/tmstack:file-pr`. Do not
-install it on a machine that runs the installer, or each skill loads twice.
-Install it from GitHub, not from a checkout's path: a path install copies the
-whole folder, ignored files included, while a GitHub install has only what is
-committed. A new skill goes into the plugin's `skills` list in
-`.claude-plugin/marketplace.json`, and `check-skills.sh` fails until it does.
+The environment cache keeps the clone for about a week, so a skill change
+reaches the cloud at the next cache rebuild, or when a session pulls and
+reruns the installer.
 
 What the skills need from the machine does not come with them. Set these on
 the cloud environment:
@@ -130,15 +124,7 @@ the cloud environment:
   the token can come from a network secret.
 
 The cloud GitHub proxy blocks the GraphQL API, so `gh pr` and `gh issue` fail
-there. file-pr and review-loop call `gh pr`, so they need a local session or
-a Project thread on your own computer.
-
-### speak
-
-The speak mod, replies read aloud with `/speak` and playback controls above
-the prompt, used to live here as `speak-mod/`. It is now its own repo and
-marketplace, [speak-mod](https://github.com/truemar14/speak-mod), installed
-as `speak@speak-mod`.
+there. file-pr and review-loop call `gh pr`, so they need a local session.
 
 The `metadata` block in each frontmatter (`harness`, `platform`, `scope`,
 `requires`) is this repo's own convention, not standard skill frontmatter. The
