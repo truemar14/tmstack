@@ -11,7 +11,8 @@ it.
 Every skill follows `writing-for-agents/SKILL.md`. Before opening a PR, run
 `./install.sh --dry-run` and `./check-skills.sh`.
 
-`check-skills.sh` lints each skill's frontmatter. It also fails on any term
+`check-skills.sh` lints each skill's frontmatter, in this checkout or in the
+repo whose path you give it, as the installer does. It also fails on any term
 from the `PRIVATE_NAMES` environment variable, one term per line, found in a
 tracked file, matched as whole words in any case. CI reads that list from a
 repository secret of the same name, so the names never land in the repo.
