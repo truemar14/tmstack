@@ -2,7 +2,6 @@
 name: review-loop
 description: Review a pull request with fresh eyes until a round comes back clean, then merge if asked. Use when the user asks to review and merge a PR, to review every open PR and merge what is ready, or for a second review pass.
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---

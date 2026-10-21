@@ -2,7 +2,6 @@
 name: html-communication
 description: Write a plan, spec, findings, report, comparison, or set of UI mock variants as one self-contained HTML page and publish it. Use when the user asks for any of those as HTML, asks for mocks or variants to pick from, or says "HTML" with no other context.
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
   requires: "the Artifact tool (Claude Code); curl, FILE_HOST_URL and FILE_HOST_TOKEN in the environment (file-upload skill) for the file host case; a browser (browser tools or headless Playwright) for the mock check"
@@ -20,8 +19,8 @@ UI mocks. Not for HTML that ships as part of a product.
   republish keeps the URL.
 - **File host** (`$FILE_HOST_URL`, via the `file-upload` skill): when
   the link must open without a Claude login (a PR description, a mock set for
-  the team), when the user says "public" or "upload", and always from Codex,
-  which has no Artifact tool. The `file-upload` skill holds the host's rules:
+  the team), or when the user says "public" or "upload". The `file-upload`
+  skill holds the host's rules:
   what may never go up, in-place updates, and the 401 case.
 
 This skill makes HTML pages. On Claude Code, a request for a doc or a deck

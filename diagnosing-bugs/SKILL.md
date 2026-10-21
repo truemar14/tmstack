@@ -8,7 +8,6 @@ description: >-
   shows is fixed directly, without this skill.
 license: Complete terms in LICENSE.txt
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---

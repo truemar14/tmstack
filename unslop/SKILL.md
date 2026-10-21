@@ -3,7 +3,6 @@ name: unslop
 description: Cut AI tells from prose people will read. Use before a PR description, README, doc page, commit body, or post ships, or when the user says "unslop".
 license: Complete terms in LICENSE.txt
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---

@@ -2,7 +2,6 @@
 name: wait-what
 description: Restate the last reply in plain words. Use when the user says "wait what", "in simpler terms", or that a reply was too long or too technical.
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---

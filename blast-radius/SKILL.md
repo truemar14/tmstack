@@ -4,7 +4,6 @@ description: Find what a change could break outside its diff, and prove the one 
 disable-model-invocation: true
 license: Complete terms in LICENSE.txt
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---

@@ -1,6 +1,6 @@
 # TMStack
 
-Skills for Claude Code and Codex, shared across every machine I work on. Each top-level directory with a `SKILL.md` is one
+Skills for Claude Code, shared across every machine I work on. Each top-level directory with a `SKILL.md` is one
 skill. The files inside are the skill's own scripts.
 
 The repo holds only the general skills. Personal instructions (`AGENTS.md`),
@@ -24,12 +24,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $HOME\Work\tmstack\install.p
 ```
 
 The installer symlinks every skill allowed on this platform into
-`~/.claude/skills/` for Claude Code and `~/.agents/skills/` for Codex, for
-each of the two harnesses present on the machine. Run it again after pulling.
-It re-points its own links, removes its links to skills that no longer exist,
-and never overwrites a real skill directory or a link it did not make. It also
-removes the links earlier versions made in `~/.codex/skills/`, the old Codex
-location. `install.ps1` does the same on Windows with junctions.
+`~/.claude/skills/`. Run it again after pulling. It re-points its own links,
+removes its links to skills that no longer exist, and never overwrites a real
+skill directory or a link it did not make. `install.ps1` does the same on
+Windows with junctions.
 
 Give either installer a path to install another repo with the same layout,
 such as a private one:
@@ -56,7 +54,7 @@ The installer does not set up:
 | `file-pr/` | File a concise PR in nine steps with done conditions: branch, rebase, diff review, verify, screenshot or recording, title and description conventions with bad/good examples. |
 | `babysit-pr/` | Monitor a PR through review bots and CI until green, without scope creep. |
 | `file-upload/` | Upload a file to your file host and get a link-only, unindexed URL; delete with the same token. HTML updates in place; media is immutable. Worker source in `worker/`. |
-| `html-communication/` | Plans, specs, findings, and UI mock variants as one self-contained HTML page. A private Artifact by default, the file host when the link must open without a login or from Codex. |
+| `html-communication/` | Plans, specs, findings, and UI mock variants as one self-contained HTML page. A private Artifact by default, the file host when the link must open without a login. |
 | `frontend-design/` | Guidance for the visual design of new or reshaped UI. |
 | `grilling/` | Interview the user in numbered rounds until every branch of a plan is settled. |
 | `catch-up/` | Answer "where were we?" in a session you lost track of: where it stopped, what is waiting on you, and the next step. Read only. |
@@ -81,8 +79,7 @@ another, it says "Call the Skill tool with" and the name, the convention in
 `writing-for-agents/SKILL-MECHANICS.md`.
 
 retro, blast-radius and handoff are user-invoked: they fire only when typed,
-so their descriptions take no room in the agent's context. Each carries an
-`agents/openai.yaml` so Codex treats it the same way.
+so their descriptions take no room in the agent's context.
 
 grilling, domain-modeling, writing-for-agents, diagnosing-bugs, retro and
 handoff are adapted from Matt Pocock's skills (MIT; the version is in each
@@ -126,9 +123,9 @@ the cloud environment:
 The cloud GitHub proxy blocks the GraphQL API, so `gh pr` and `gh issue` fail
 there. file-pr and review-loop call `gh pr`, so they need a local session.
 
-The `metadata` block in each frontmatter (`harness`, `platform`, `scope`,
-`requires`) is this repo's own convention, not standard skill frontmatter. The
-installer reads `platform` and `harness`. The rest is documentation.
+The `metadata` block in each frontmatter (`platform`, `scope`, `requires`)
+is this repo's own convention, not standard skill frontmatter. The installer
+reads `platform`. The rest is documentation.
 
 ## Principles behind the skills
 

@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
-# install.sh - link a skills repo's skills and instructions into the agent harnesses on this machine.
+# install.sh - link a skills repo's skills and instructions into Claude Code on this machine.
 # The repo is this checkout, or the directory given as an argument: a private repo with the same
 # layout is installed with this same script, so it carries no installer of its own.
 # Idempotent: run it after cloning and again after pulling. For every top-level directory with a
-# SKILL.md it reads the frontmatter's metadata.platform (default: all) and metadata.harness (default:
-# claude and codex) and symlinks the directory into ~/.claude/skills/<name> and, for Codex,
-# ~/.agents/skills/<name>, for each listed harness that exists here (~/.claude or ~/.codex present).
-# When the checkout has them, it also links CLAUDE.md (or AGENTS.md when there is no CLAUDE.md) into
-# ~/.claude, and AGENTS.md into ~/.codex, so a skills-only repo and a private repo holding AGENTS.md
-# install side by side.
-# Links into the repo are re-pointed and removed when their skill folder is gone, and removed from
-# ~/.codex/skills, the deprecated Codex root earlier runs used; a symlink to anywhere else, or a real
-# file or directory in the way, is left alone and reported.
+# SKILL.md it reads the frontmatter's metadata.platform (default: all) and symlinks the directory
+# into ~/.claude/skills/<name>. When the checkout has them, it also links CLAUDE.md (or AGENTS.md
+# when there is no CLAUDE.md) into ~/.claude, so a skills-only repo and a private repo holding
+# AGENTS.md install side by side.
+# Links into the repo are re-pointed and removed when their skill folder is gone; a symlink to
+# anywhere else, or a real file or directory in the way, is left alone and reported.
 # Usage: ./install.sh [--dry-run] [<repo>]     (Linux and macOS; on Windows use install.ps1, since
 # Git Bash makes copies instead of symlinks unless Developer Mode is on)
 set -euo pipefail
@@ -42,50 +39,37 @@ link() {   # link <target> <path>
   fi
 }
 
-# skills <harness>: where that harness reads user skills. Codex reads ~/.agents/skills.
-skills() { if [[ $1 == codex ]]; then echo "$HOME/.agents/skills"; else echo "$HOME/.$1/skills"; fi; }
-
-harnesses=(); [[ -d ~/.claude ]] && harnesses+=(claude); [[ -d ~/.codex ]] && harnesses+=(codex)
-if ((${#harnesses[@]} == 0)); then echo "no ~/.claude or ~/.codex here: install Claude Code or Codex first" >&2; exit 1; fi
-echo "$REPO: platform $PLATFORM, harnesses: ${harnesses[*]}${DRY:+ (dry run)}"
+SKILLS=$HOME/.claude/skills
+[[ -d ~/.claude ]] || { echo "no ~/.claude here: install Claude Code first" >&2; exit 1; }
+echo "$REPO: platform $PLATFORM${DRY:+ (dry run)}"
 
 # Claude gets CLAUDE.md alone when the repo has one: it imports AGENTS.md through the link's real
 # path, and Claude Code also loads ~/.claude/AGENTS.md in projects without a CLAUDE.md, so a link
 # there would load the same file twice. An earlier run's link there is removed.
-[[ -f $REPO/AGENTS.md ]] && for h in "${harnesses[@]}"; do
-  echo "instructions -> ~/.$h"
-  if [[ $h == claude && -f $REPO/CLAUDE.md ]]; then
+if [[ -f $REPO/AGENTS.md ]]; then
+  echo "instructions -> ~/.claude"
+  if [[ -f $REPO/CLAUDE.md ]]; then
     link "$REPO/CLAUDE.md" ~/.claude/CLAUDE.md
     if [[ -L ~/.claude/AGENTS.md && $(readlink ~/.claude/AGENTS.md) == "$REPO"/* ]]; then
       echo "  remove $HOME/.claude/AGENTS.md (CLAUDE.md imports it)"; [[ -n $DRY ]] || rm ~/.claude/AGENTS.md
     fi
   else
-    link "$REPO/AGENTS.md" ~/."$h"/AGENTS.md
+    link "$REPO/AGENTS.md" ~/.claude/AGENTS.md
   fi
-done
+fi
 
 for skill in "$REPO"/*/SKILL.md; do
+  [[ -f $skill ]] || continue   # a repo with no skills leaves the glob unexpanded
   dir=$(dirname "$skill"); name=$(basename "$dir")
-  platforms=$(field "$skill" platform); want=$(field "$skill" harness)
+  platforms=$(field "$skill" platform)
   if [[ -n $platforms && " $platforms " != *" $PLATFORM "* ]]; then echo "$name: skip ($platforms only)"; continue; fi
   echo "$name"
-  for h in "${harnesses[@]}"; do
-    [[ -z $want || " $want " == *" $h "* ]] || continue
-    link "$dir" "$(skills "$h")/$name"
-  done
+  link "$dir" "$SKILLS/$name"
 done
 
 # Links into the repo whose skill folder no longer exists are ours to remove.
-for h in "${harnesses[@]}"; do
-  for l in "$(skills "$h")"/*; do
-    [[ -L $l ]] || continue; t=$(readlink "$l")
-    [[ $t == "$REPO"/* && ! -f $t/SKILL.md ]] || continue
-    echo "  remove $l (skill gone)"; [[ -n $DRY ]] || rm "$l"
-  done
-done
-
-# Codex once read ~/.codex/skills, and earlier runs linked there. Every link into the repo there is ours.
-for l in ~/.codex/skills/*; do
-  [[ -L $l && $(readlink "$l") == "$REPO"/* ]] || continue
-  echo "  remove $l (Codex reads ~/.agents/skills)"; [[ -n $DRY ]] || rm "$l"
+for l in "$SKILLS"/*; do
+  [[ -L $l ]] || continue; t=$(readlink "$l")
+  [[ $t == "$REPO"/* && ! -f $t/SKILL.md ]] || continue
+  echo "  remove $l (skill gone)"; [[ -n $DRY ]] || rm "$l"
 done

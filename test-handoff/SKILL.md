@@ -2,7 +2,6 @@
 name: test-handoff
 description: Check a change in the real app before handing it to the user, then hand over test scenarios and the steps only they can do. Use before saying a change is fixed, done or ready to test, and when the user asks how to test something or what they need to do by hand.
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
   requires: "for web changes, browser tools, or else the app's dev server and headless Playwright"
@@ -28,7 +27,7 @@ the check.
 - Visual variants or mocks: open every one; a broken variant never reaches the
   user.
 
-With no browser tools (Codex, a headless box), a web app is still in
+With no browser tools (a headless box), a web app is still in
 reach: start its dev server, wait until the port answers, run a short
 headless Playwright script against it, then stop the server. The script
 waits for the network to go idle before it reads the page, then saves a

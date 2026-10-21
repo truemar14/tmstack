@@ -2,7 +2,6 @@
 name: babysit-pr
 description: Monitor a pull request through review and CI. Use when the user asks to monitor, watch, or babysit a PR.
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---

@@ -4,7 +4,6 @@ description: Look back at a coding session and propose changes to the agent's en
 disable-model-invocation: true
 license: Complete terms in LICENSE.txt
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---
@@ -21,11 +20,9 @@ the session that shows it is needed.
 The session is the one the user names, or this one. Read its transcript,
 not your memory of it.
 
-- Claude Code: `~/.claude/projects/<slug>/<session-id>.jsonl`, where
-  `<slug>` is the working directory with every character that is not a
-  letter or digit turned into `-`.
-- Codex: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`, keeping the files
-  whose first line has `payload.cwd` equal to the working directory.
+It is `~/.claude/projects/<slug>/<session-id>.jsonl`, where `<slug>` is the
+working directory with every character that is not a letter or digit turned
+into `-`.
 
 Stay in this workspace's sessions; other projects' transcripts are private
 to them. Confirm the file by finding the session's opening prompt in its

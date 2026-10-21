@@ -3,7 +3,6 @@ name: writing-for-agents
 description: Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.
 license: Complete terms in LICENSE.txt
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---
@@ -19,14 +18,11 @@ and router skills.
 
 ## In this repo
 
-- Every skill carries the `metadata` block the installer reads: `harness`
-  (`claude`, `codex`, default both), `platform` (`win32`, `linux`,
-  `darwin`; a general skill lists all three), `scope` (`fleet` here; a
-  private repo with the same layout uses it to mark skills bound to one
-  machine), and `requires` when the skill needs something the installer does not set up.
-  A skill works under both harnesses unless `harness` says otherwise, so
-  nothing in it may depend on a tool only one of them has without naming the
-  fallback.
+- Every skill carries the `metadata` block the installer reads: `platform`
+  (`win32`, `linux`, `darwin`; a general skill lists all three), `scope`
+  (`fleet` here; a private repo with the same layout uses it to mark skills
+  bound to one machine), and `requires` when the skill needs something the
+  installer does not set up.
 - A skill adapted from elsewhere keeps a `license:` line in its frontmatter
   and the source's notice in `LICENSE.txt` next to it.
 - Two house rules apply inside every skill here: no em dashes, en dashes or
