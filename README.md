@@ -1,7 +1,7 @@
 # TMStack
 
-Skills for Claude Code and Codex, plus two Claude Code plugins, shared across
-every machine I work on. Each top-level directory with a `SKILL.md` is one
+Skills for Claude Code and Codex, plus a Claude Code plugin of them, shared
+across every machine I work on. Each top-level directory with a `SKILL.md` is one
 skill. The files inside are the skill's own scripts.
 
 The repo holds only the general skills. Personal instructions (`AGENTS.md`),
@@ -46,9 +46,9 @@ The installer does not set up:
   `file-upload/worker/`, a Cloudflare Worker backed by R2. Its README has the
   four deploy steps. `FILE_HOST_TOKEN` holds the same value as the worker's
   `UPLOAD_TOKEN` secret.
-- The speak plugin for voice mode. It needs function hooks turned on, the
-  repo added as the `tmstack` marketplace, `speak@tmstack` installed, and an
-  engine key. See `speak-mod/README.md`.
+- The speak plugin for voice mode. It lives in its own repo,
+  [speak-mod](https://github.com/truemar14/speak-mod), with its own
+  marketplace; its README has the setup.
 
 ## Skills
 
@@ -135,17 +135,10 @@ a Project thread on your own computer.
 
 ### speak
 
-`speak-mod/` is a Claude Code plugin of function hooks ("Claude Mods"). It
-reads replies aloud with a Fish Audio or ElevenLabs voice, adds `/speak`, and
-puts playback controls above the prompt. A box without speakers plays through
-the machine you connected from, over SSH. The repo root's
-`.claude-plugin/marketplace.json` makes the checkout a directory marketplace
-named `tmstack`, so the plugin runs in place and `git pull` updates it:
-
-```sh
-claude plugin marketplace add /path/to/tmstack
-claude plugin install speak@tmstack
-```
+The speak mod, replies read aloud with `/speak` and playback controls above
+the prompt, used to live here as `speak-mod/`. It is now its own repo and
+marketplace, [speak-mod](https://github.com/truemar14/speak-mod), installed
+as `speak@speak-mod`.
 
 The `metadata` block in each frontmatter (`harness`, `platform`, `scope`,
 `requires`) is this repo's own convention, not standard skill frontmatter. The
