@@ -68,17 +68,19 @@ The installer does not set up:
 | `retro/` | Look back at a session from its transcript and propose changes to the agent's environment: checks, pointers, skills, steering files. Applies only what the user picks. User-invoked. |
 | `blast-radius/` | Find what a change breaks outside its diff, and prove the one fact it is safe because of by running real code. User-invoked. |
 | `handoff/` | Write a handoff document a fresh agent can continue from, where the next machine can read it. User-invoked. |
+| `verify-setup/` | Find and run every way an agent can check a project works, and record what passed, and what each out-of-reach check needs, as a Verify section in its `AGENTS.md`. User-invoked. |
 
 The skills call each other. html-communication publishes an Artifact, or goes
 through file-upload when the link must open without a login. file-pr and
 babysit-pr use file-upload for screenshots. file-pr sketches a change as a
 file tree or call tree when that reads faster, and hands off to babysit-pr.
 file-pr and html-communication run their prose through unslop before it
-ships. review-loop holds each round to babysit-pr's done bar. Where one skill runs
+ships. review-loop holds each round to babysit-pr's done bar. test-handoff starts
+from the Verify section that verify-setup writes. Where one skill runs
 another, it says "Call the Skill tool with" and the name, the convention in
 `writing-for-agents/SKILL-MECHANICS.md`.
 
-retro, blast-radius and handoff are user-invoked: they fire only when typed,
+retro, blast-radius, handoff and verify-setup are user-invoked: they fire only when typed,
 so their descriptions take no room in the agent's context.
 
 grilling, domain-modeling, writing-for-agents, diagnosing-bugs, retro and
