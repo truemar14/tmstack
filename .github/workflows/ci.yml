@@ -18,8 +18,11 @@ jobs:
           ln -s "$RUNNER_TEMP/elsewhere/theirs" "$HOME/.claude/skills/theirs"
           ln -s "$RUNNER_TEMP/other/gone" "$HOME/.claude/skills/gone" && rmdir "$RUNNER_TEMP/other/gone"
           ./install.sh --dry-run "$RUNNER_TEMP/other" | tee "$RUNNER_TEMP/out"
-          grep -q 'claude/skills/demo' "$RUNNER_TEMP/out" && grep -q 'claude/AGENTS.md' "$RUNNER_TEMP/out"
-          grep -q 'remove .*claude/skills/gone' "$RUNNER_TEMP/out" && [[ -L $HOME/.claude/skills/gone ]]
+          # One assertion per line: bash -e ignores a failure on the left of &&.
+          grep -q 'claude/skills/demo' "$RUNNER_TEMP/out"
+          grep -q 'claude/AGENTS.md' "$RUNNER_TEMP/out"
+          grep -q 'remove .*claude/skills/gone' "$RUNNER_TEMP/out"
+          [[ -L $HOME/.claude/skills/gone ]]
           if grep -q -e 'skills/mine' -e 'skills/theirs' "$RUNNER_TEMP/out"; then exit 1; fi
           ./install.sh "$RUNNER_TEMP/other"
           [[ -L $HOME/.claude/skills/demo && -d $HOME/.claude/skills/mine && -L $HOME/.claude/skills/theirs ]]
