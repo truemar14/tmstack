@@ -25,10 +25,7 @@ Two choices, trading the two loads:
   context load, but it spends cognitive load; you are the index that must
   remember it exists. Mechanics: set `disable-model-invocation: true`; the
   `description` becomes human-facing, a one-line summary with trigger lists
-  stripped. Codex ignores that field, so the skill also carries an
-  `agents/openai.yaml` with `policy.allow_implicit_invocation: false`, and an
-  `interface` block holding `display_name` and `short_description` for its
-  picker. A skill is user-invoked in both harnesses or neither.
+  stripped.
 
 Pick model-invocation only when the agent must reach the skill on its own, or
 another skill must. If it only ever fires by hand, make it user-invoked and
@@ -43,9 +40,7 @@ outside the skill system, external reference any skill can point at.
 When a step runs another skill now, write it as a tool call: "Call the Skill
 tool with `unslop`". A skill named in prose ("run it through the unslop
 skill") often does not load it. Two skills are two calls: "Call the Skill
-tool twice, for `grilling` and `domain-modeling`". Codex has no Skill tool;
-there the same line makes the agent open that skill's `SKILL.md` from its
-skill list, so the wording works in both harnesses.
+tool twice, for `grilling` and `domain-modeling`".
 
 Only a model-invoked skill can be called. When a step needs a user-invoked
 one, tell the user to run it. A plain mention that only describes another

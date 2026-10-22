@@ -2,7 +2,6 @@
 name: file-upload
 description: Upload a local file to the public file host and get back a permanent URL. Use when the user asks to upload a file, or when a screenshot, recording, HTML page, or other file needs a public URL, such as for a PR description.
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
   requires: "curl; FILE_HOST_URL and FILE_HOST_TOKEN in the environment (see worker/README.md)"

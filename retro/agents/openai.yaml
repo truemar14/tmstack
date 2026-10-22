@@ -1,5 +1,0 @@
-interface:
-  display_name: "Retro"
-  short_description: "Propose environment changes from a past session."
-policy:
-  allow_implicit_invocation: false

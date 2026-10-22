@@ -5,7 +5,6 @@ argument-hint: "What will the next session be used for?"
 disable-model-invocation: true
 license: Complete terms in LICENSE.txt
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---

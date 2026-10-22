@@ -3,7 +3,6 @@ name: domain-modeling
 description: Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a CONTEXT.md, or recording or editing an ADR.
 license: Complete terms in LICENSE.txt
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---
@@ -55,8 +54,7 @@ Create files lazily, only when you have something to write. If no
 The glossary is needed in every conversation about the project, so it loads
 in every session rather than sitting behind a pointer. When you create a
 `CONTEXT.md`, import it from the repo's `CLAUDE.md` with a line that reads
-`@CONTEXT.md`; Codex has no import syntax, so the repo's `AGENTS.md` opens
-with "Read `CONTEXT.md` before anything else." ADRs stay behind a pointer:
+`@CONTEXT.md`. ADRs stay behind a pointer:
 they matter only on the branch that touches their area.
 
 ## During the session

@@ -2,7 +2,6 @@
 name: catch-up
 description: Hand the current session back to a user who has lost the thread of it. Use when the user asks where things stand in this session, for example "where were we?" or "catch me up".
 metadata:
-  harness: [claude, codex]
   platform: [win32, linux, darwin]
   scope: fleet
 ---
