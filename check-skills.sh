@@ -22,6 +22,7 @@ problem() { echo "$1"; fail=1; }
 field() { sed -n '2,/^---$/p' "$1" | sed -n "s/^ *$2: *//p" | tr -d '[],"'"'"'' ; }
 
 for skill in "$REPO"/*/SKILL.md; do
+  [[ -f $skill ]] || continue   # a repo with no skills leaves the glob unexpanded
   name=$(basename "$(dirname "$skill")"); rel=$name/SKILL.md
   if [[ $(head -n 1 "$skill") != --- ]] || (( $(grep -c '^---$' "$skill") < 2 )); then
     problem "$rel: frontmatter must open on line 1 and close with ---"; continue
