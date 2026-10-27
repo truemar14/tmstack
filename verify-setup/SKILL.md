@@ -44,12 +44,16 @@ Done when every source above was read and every candidate has its line.
 
 ## 2. Run
 
-Run every safe candidate on this machine. The real target counts: call the
-Skill tool with `test-handoff` and follow only its step 1 to reach it, then get
-a screenshot, log or response back.
+Run every safe candidate on this machine. The real target counts: launch the
+closest non-production build of what the user opens, and get a screenshot, log
+or response back. Without browser tools a web app is still in reach: start its
+dev server, wait until the port answers, run a short headless Playwright script
+against it, then stop the server.
 
 - **Green**: keep it, with what it proved.
-- **Red**: report it in step 4. It stays out of the section until it passes.
+- **Red**: report it in step 4. A new check stays out of the section until it
+  passes. A line already in the section stays as it is: the red may be this
+  machine's, and the user decides.
 - **Out of reach**: write its **precondition**, the OS, machine, device,
   account or service it needs. The section is read on other machines and in
   cloud sessions, so a precondition is something any reader can test against
@@ -59,7 +63,10 @@ Done when each candidate is green, red, or has a precondition.
 
 ## 3. Write the section
 
-Rewrite the whole section from this run, replacing any old one. Keep a line
+Rewrite the section from this run. A line from the old one stays unchanged
+when this machine could not test it: its precondition does not hold here, or
+it went red. Drop or change an old line only when this run showed it wrong,
+such as a script that no longer exists. Keep a line
 when it says what the environment does not: which command is the gate, what it
 proves, the order, a gotcha, a precondition. A script whose name already says
 what it does stays out. One screen at most:
@@ -82,8 +89,8 @@ load this skill read the section, and that line is how they keep it true.
 Leave the edit uncommitted and show the diff. The instruction file is often
 shared with a team, so the user decides whether it goes through file-pr.
 
-Done when the section holds only green checks and preconditions, and the diff
-is shown.
+Done when every new line is a green check or a precondition, every old line
+is kept or was shown wrong, and the diff is shown.
 
 ## 4. Report
 
