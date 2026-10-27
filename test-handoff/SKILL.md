@@ -20,6 +20,12 @@ the page in the browser and size they use.
 A unit test, a harness page or a dev build in another browser is evidence, not
 the check.
 
+Start from the project's verify section, the `## Verify` heading in its
+`AGENTS.md` or `CLAUDE.md`: it names the gate, the real target and each
+check's precondition. When a line there turns out wrong, follow the edit rule
+at the top of the section. When the project has no such section, say so once
+in the handoff and point the user at the verify-setup skill.
+
 - Rebuild and reload first, so the target runs the current code.
 - Exercise the exact behaviour that changed, and one neighbour it could break.
 - UI: look at it at desktop width, at phone width when the UI has one, and in
@@ -36,7 +42,8 @@ ships for, so this covers only its pages that also load on their own.
 Without Playwright either, the app is out of reach, as below.
 
 When the real target is out of reach (another machine, a signed-in account, a
-device), say exactly which part you could not check and why.
+device), say exactly which part you could not check and why. A precondition
+from the verify section is the why.
 
 Done when each changed behaviour was seen working in the real target, or is
 named as unchecked with the reason.
