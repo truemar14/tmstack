@@ -65,9 +65,8 @@ grilling, domain-modeling and writing-for-agents are adapted from Matt
 Pocock's skills (MIT; the version is in each `LICENSE.txt`). unslop is adapted
 from backnotprop/pstack (MIT). Some sections borrow ideas in new words:
 test-handoff's evidence table from obra/superpowers, and its headless
-fallback from anthropics/skills' webapp-testing. Each adapted skill keeps the source notice
-in its `LICENSE.txt`. Everything else is MIT,
-see `LICENSE`.
+fallback from anthropics/skills' webapp-testing. Each adapted skill keeps the
+source notice in its `LICENSE.txt`. Everything else is MIT, see `LICENSE`.
 
 ## Cloud sessions
 
