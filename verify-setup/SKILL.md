@@ -31,17 +31,22 @@ source:
 - Launch configs (`.claude/launch.json`, compose files) and how the real target
   is built: the extension, the app, the site the user opens.
 
-Read a command before running it. One that writes to a shared, remote or live
-resource (a deploy, a migration against a remote database, a publish, a real
-email or payment, a production key) stays unrun and goes to the user in
-step 4. Record names of env vars, accounts and services, never their values.
+Read a command before running it, and the scripts it calls. A candidate is
+**safe** when it only reads, builds, typechecks, lints, or tests against state
+it creates itself. Anything else stays unrun and goes to the user in step 4:
+a write to a shared, remote or live resource (a deploy, a remote migration, a
+publish, a real email or payment, a production key), and local destruction
+too (a reset, seed, drop or truncate of a database, test suites that do one
+included, or a delete of files or git state). Record names of env vars,
+accounts and services, never their values.
 
 Done when every source above was read and every candidate has its line.
 
 ## 2. Run
 
-Run every safe candidate on this machine. The real target counts: launch it
-the way test-handoff would, and get a screenshot, log or response back.
+Run every safe candidate on this machine. The real target counts: call the
+Skill tool with `test-handoff` and follow only its step 1 to reach it, then get
+a screenshot, log or response back.
 
 - **Green**: keep it, with what it proved.
 - **Red**: report it in step 4. It stays out of the section until it passes.
@@ -62,7 +67,7 @@ what it does stays out. One screen at most:
 ```markdown
 ## Verify
 
-Last run 2026-10-19 on Linux. If a line here is wrong, fix it in the same change.
+Last run 2026-10-19 on Linux. If a line here is wrong, fix it, leave that edit uncommitted, and tell the user.
 
 - `npm run check`: types and lint. The gate before any commit.
 - `npm test`: unit tests. Run `docker compose up -d db` first.
