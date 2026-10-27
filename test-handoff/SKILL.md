@@ -22,10 +22,9 @@ the check.
 
 Start from the project's verify section, the `## Verify` heading in its
 `AGENTS.md` or `CLAUDE.md`: it names the gate, the real target and each
-check's precondition. A line there that turns out wrong gets fixed, but the
-file is often shared with a team: leave that edit out of any commit and name
-it in the handoff, so the user decides. When the project has no such section, say so once in the handoff and
-point the user at the verify-setup skill.
+check's precondition. When a line there turns out wrong, follow the edit rule
+at the top of the section. When the project has no such section, say so once
+in the handoff and point the user at the verify-setup skill.
 
 - Rebuild and reload first, so the target runs the current code.
 - Exercise the exact behaviour that changed, and one neighbour it could break.

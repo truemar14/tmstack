@@ -5,6 +5,7 @@ disable-model-invocation: true
 metadata:
   platform: [win32, linux, darwin]
   scope: fleet
+  requires: "for a web target, browser tools, or else the app's dev server and headless Playwright"
 ---
 
 # Verify setup
@@ -52,8 +53,7 @@ against it, then stop the server.
 
 - **Green**: keep it, with what it proved.
 - **Red**: report it in step 4. A new check stays out of the section until it
-  passes. A line already in the section stays as it is: the red may be this
-  machine's, and the user decides.
+  passes. A line already in the section follows the section's edit rule.
 - **Out of reach**: write its **precondition**, the OS, machine, device,
   account or service it needs. The section is read on other machines and in
   cloud sessions, so a precondition is something any reader can test against
@@ -63,18 +63,17 @@ Done when each candidate is green, red, or has a precondition.
 
 ## 3. Write the section
 
-Rewrite the section from this run. A line from the old one stays unchanged
-when this machine could not test it: its precondition does not hold here, or
-it went red. Drop or change an old line only when this run showed it wrong,
-such as a script that no longer exists. Keep a line
-when it says what the environment does not: which command is the gate, what it
-proves, the order, a gotcha, a precondition. A script whose name already says
-what it does stays out. One screen at most:
+Write the section from this run. Lines already there follow its edit rule.
+Add a line when it says what the environment does not: which command is the
+gate, what it proves, the order, a gotcha, a precondition. A script whose name
+already says what it does stays out. One screen at most:
 
 ```markdown
 ## Verify
 
-Last run 2026-10-19 on Linux. If a line here is wrong, fix it, leave that edit uncommitted, and tell the user.
+Edit rule: change or drop a line only when this machine showed it wrong, such as a script that no longer exists. A line that fails here for a local reason stays as it is. Leave any edit to this section uncommitted and tell the user.
+
+Last run 2026-10-19 on Linux.
 
 - `npm run check`: types and lint. The gate before any commit.
 - `npm test`: unit tests. Run `docker compose up -d db` first.
@@ -83,14 +82,16 @@ Last run 2026-10-19 on Linux. If a line here is wrong, fix it, leave that edit u
 - Payments: no sandbox. Needs the user.
 ```
 
-The repair line under the heading stays in every version. Sessions that never
-load this skill read the section, and that line is how they keep it true.
+The edit rule is the one place the section's editing rules live. It opens
+every version word for word, because test-handoff and sessions that never
+load this skill follow it from there. The date line below it is rewritten
+each run.
 
-Leave the edit uncommitted and show the diff. The instruction file is often
-shared with a team, so the user decides whether it goes through file-pr.
+Show the diff. The instruction file is often shared with a team, so the user
+decides whether it goes through file-pr.
 
-Done when every new line is a green check or a precondition, every old line
-is kept or was shown wrong, and the diff is shown.
+Done when the edit rule opens the section word for word, every new line is a
+green check or a precondition, and the diff is shown.
 
 ## 4. Report
 
