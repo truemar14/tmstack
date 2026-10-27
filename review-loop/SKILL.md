@@ -40,11 +40,12 @@ written down.
    go in the report with the reason, since the reviewer's findings never
    appear on the PR.
 3. Push, then check CI on the new head, and work any new review-bot or human
-   comments as the `babysit-pr` skill does.
+   comments: check each against the source, fix the real ones, reply with
+   the reason to the rest, and keep the PR to its original goal.
 
 A round is **clean** when a fresh reviewer, looking at the current head,
 returns no real findings, CI is green, and every review thread on the PR is
-addressed (babysit-pr's done bar). A round that needed fixes is never clean,
+addressed. A round that needed fixes is never clean,
 because the fixes themselves are unreviewed. Repeat rounds until one is clean.
 After three rounds in a row that each needed fixes, stop and report the PR as
 blocked with the findings that keep coming back. Done when the latest round

@@ -4,7 +4,7 @@ description: Write a plan, spec, findings, report, comparison, or set of UI mock
 metadata:
   platform: [win32, linux, darwin]
   scope: fleet
-  requires: "the Artifact tool (Claude Code); curl, FILE_HOST_URL and FILE_HOST_TOKEN in the environment (file-upload skill) for the file host case; a browser (browser tools or headless Playwright) for the mock check"
+  requires: "the Artifact tool (Claude Code); a browser (browser tools or headless Playwright) for the mock check"
 ---
 
 # HTML Communication
@@ -14,14 +14,8 @@ UI mocks. Not for HTML that ships as part of a product.
 
 ## Where it goes
 
-- **Artifact** (Claude Code): the default. Private to the user until they share
-  it, comment threads on the page, renders in the viewer's theme, and a
-  republish keeps the URL.
-- **File host** (`$FILE_HOST_URL`, via the `file-upload` skill): when
-  the link must open without a Claude login (a PR description, a mock set for
-  the team), or when the user says "public" or "upload". The `file-upload`
-  skill holds the host's rules:
-  what may never go up, in-place updates, and the 401 case.
+An Artifact: private to the user until they share it, comment threads on the
+page, renders in the viewer's theme, and a republish keeps the URL.
 
 This skill makes HTML pages. On Claude Code, a request for a doc or a deck
 goes through the Artifact tool's quickstart, which picks the type. A plan,
@@ -45,8 +39,7 @@ One self-contained HTML file, capped at 512 KB.
   keep the page readable without it.
 - Give external links `target="_blank"` and `rel="noopener noreferrer"`.
 - Write a complete document: doctype, `<meta charset>`, the viewport meta,
-  `<title>`, `<style>`, then the content in `<main>`. The same file goes to
-  either venue.
+  `<title>`, `<style>`, then the content in `<main>`.
 
 ## UI Mocks
 
@@ -55,8 +48,8 @@ When the user asks for variants:
 - Render real styled variants, not descriptions.
 - Label them `A`, `B`, `C`... and lay them out for direct comparison.
 - A mock of an existing product matches that product's colors, type, spacing,
-  and components. For a new surface with no design system to match, call
-  the Skill tool with `frontend-design`. The document's own style stays
+  and components. For a new surface with no design system to match, give
+  each variant its own clear visual direction. The document's own style stays
   outside the mocked interface.
 - A mock of an existing page changes only what the user asked to change; the
   rest of the page, such as its header and footer, stays as the original.
@@ -69,20 +62,12 @@ When the user asks for variants:
 ## Publish
 
 Publishing is part of this skill, not a separate step: every document it
-creates or updates goes to one of the two venues before the reply ends,
-without asking for permission first. An Artifact starts
-private, so the default venue exposes nothing; a user who wants to be asked
-before the file host route says so in their instructions.
+creates or updates is published before the reply ends, without asking for
+permission first. An Artifact starts private, so this exposes nothing.
 
-Artifact: write the file, publish it the way the Artifact tool's own
-instructions describe, and report the URL. For a document, `style.css` is the
-existing design system those instructions tell you to respect.
-
-File host: write the file, call the Skill tool with `file-upload`, report the
-local path and the returned URL. To update, PUT to the filename from the
-previously returned URL, as that skill describes. Upload under a fresh name
-only when a separate new draft is wanted. Never claim the document is hosted
-before the upload succeeds.
+Write the file, publish it the way the Artifact tool's own instructions
+describe, and report the URL. For a document, `style.css` is the existing
+design system those instructions tell you to respect.
 
 ## Verify
 

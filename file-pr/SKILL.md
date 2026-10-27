@@ -34,10 +34,8 @@ the harness has GitHub tools, take the same step through those.
    CLI output, gets a screenshot, and a flow gets a short recording. Capture
    it from the app, already running or started with the harness's `run`
    skill or browser tools when it has them; otherwise ask the user for the
-   file. When the `file-upload` skill and its token are present, call the
-   Skill tool with `file-upload` and embed as it describes; otherwise keep
-   the file locally and put its path in the description so the user can drop
-   it in themselves. Done: the
+   file. Keep the file locally and put its path in the description so the
+   user can drop it in themselves. Done: the
    reader can see the result without checking out the branch, the description
    says the media is pending, or the change has nothing visible to show.
 7. **Title and description.** Written by the rules below, then call the
@@ -51,8 +49,7 @@ the harness has GitHub tools, take the same step through those.
    breaks on PowerShell quoting. Done:
    `gh pr view` shows the PR open against the right base with the new title
    and body.
-9. **Report** the PR URL to the user. When they also asked to babysit it,
-   call the Skill tool with `babysit-pr`.
+9. **Report** the PR URL to the user.
 
 ## Title
 
