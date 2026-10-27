@@ -36,63 +36,37 @@ such as a private one:
 ~/projects/tmstack/install.sh ~/projects/my-private-skills
 ```
 
-The installer does not set up:
-
-- `FILE_HOST_URL` and `FILE_HOST_TOKEN` in the shell environment, used by
-  file-upload and html-communication. The host is your own deployment of
-  `file-upload/worker/`, a Cloudflare Worker backed by R2. Its README has the
-  four deploy steps. `FILE_HOST_TOKEN` holds the same value as the worker's
-  `UPLOAD_TOKEN` secret.
-- The speak plugin for voice mode. It lives in its own repo,
-  [speak-mod](https://github.com/truemar14/speak-mod), with its own
-  marketplace; its README has the setup.
+The installer does not set up the speak plugin for voice mode. It lives in
+its own repo, [speak-mod](https://github.com/truemar14/speak-mod), with its
+own marketplace; its README has the setup.
 
 ## Skills
 
 | Skill | What it does |
 |---|---|
 | `file-pr/` | File a concise PR in nine steps with done conditions: branch, rebase, diff review, verify, screenshot or recording, title and description conventions with bad/good examples. |
-| `babysit-pr/` | Monitor a PR through review bots and CI until green, without scope creep. |
-| `file-upload/` | Upload a file to your file host and get a link-only, unindexed URL; delete with the same token. HTML updates in place; media is immutable. Worker source in `worker/`. |
-| `html-communication/` | Plans, specs, findings, and UI mock variants as one self-contained HTML page. A private Artifact by default, the file host when the link must open without a login. |
-| `frontend-design/` | Guidance for the visual design of new or reshaped UI. |
+| `html-communication/` | Plans, specs, findings, and UI mock variants as one self-contained HTML page, published as a private Artifact. |
 | `grilling/` | Interview the user in numbered rounds until every branch of a plan is settled. |
 | `catch-up/` | Answer "where were we?" in a session you lost track of: where it stopped, what is waiting on you, and the next step. Read only. |
 | `domain-modeling/` | Maintain a project's glossary (`CONTEXT.md`) and decision records (ADRs) while designing. |
 | `writing-for-agents/` | The rules for writing skills, `AGENTS.md` and any other document an agent reads. Every skill here follows them. |
 | `unslop/` | Cut AI tells from prose people read: PR descriptions, docs, pages, posts. |
-| `diagnosing-bugs/` | Six-phase discipline for hard bugs: a red feedback loop before any theory, minimise, ranked hypotheses, one probe at a time, regression test, cleanup. |
 | `review-loop/` | Review a PR with a fresh reviewer each round, fix, and repeat until a round is clean; merge only when asked. Works through every open PR in dependency order. |
 | `test-handoff/` | Check a change in the real app before handing it over, then give the user numbered test scenarios and the steps only they can do. |
 | `wait-what/` | Restate the last reply in plain words: what happened, what it means, the next step. |
-| `retro/` | Look back at a session from its transcript and propose changes to the agent's environment: checks, pointers, skills, steering files. Applies only what the user picks. User-invoked. |
-| `blast-radius/` | Find what a change breaks outside its diff, and prove the one fact it is safe because of by running real code. User-invoked. |
-| `handoff/` | Write a handoff document a fresh agent can continue from, where the next machine can read it. User-invoked. |
 
-The skills call each other. html-communication publishes an Artifact, or goes
-through file-upload when the link must open without a login. file-pr and
-babysit-pr use file-upload for screenshots. file-pr sketches a change as a
-file tree or call tree when that reads faster, and hands off to babysit-pr.
-file-pr and html-communication run their prose through unslop before it
-ships. review-loop holds each round to babysit-pr's done bar. Where one skill runs
-another, it says "Call the Skill tool with" and the name, the convention in
+The skills call each other. file-pr sketches a change as a file tree or call
+tree when that reads faster. file-pr and html-communication run their prose
+through unslop before it ships. Where one skill runs another, it says "Call
+the Skill tool with" and the name, the convention in
 `writing-for-agents/SKILL-MECHANICS.md`.
 
-retro, blast-radius and handoff are user-invoked: they fire only when typed,
-so their descriptions take no room in the agent's context.
-
-grilling, domain-modeling, writing-for-agents, diagnosing-bugs, retro and
-handoff are adapted from Matt Pocock's skills (MIT; the version is in each
-`LICENSE.txt`). unslop and blast-radius are adapted from backnotprop/pstack
-(MIT). Some sections borrow ideas in new words: babysit-pr's handling of review
-comments and test-handoff's evidence table from obra/superpowers,
-diagnosing-bugs' measurement checks from pstack, and test-handoff's headless
-fallback from anthropics/skills' webapp-testing. frontend-design is a
-verbatim copy from anthropics/skills (Apache 2.0), and it keeps upstream's
-dashes, so it is the one file exempt from the house style in
-`writing-for-agents`. Each adapted
-skill keeps the source notice in its `LICENSE.txt`. Everything else is MIT,
-see `LICENSE`.
+grilling, domain-modeling and writing-for-agents are adapted from Matt
+Pocock's skills (MIT; the version is in each `LICENSE.txt`). unslop is adapted
+from backnotprop/pstack (MIT). Some sections borrow ideas in new words:
+test-handoff's evidence table from obra/superpowers, and its headless
+fallback from anthropics/skills' webapp-testing. Each adapted skill keeps the
+source notice in its `LICENSE.txt`. Everything else is MIT, see `LICENSE`.
 
 ## Cloud sessions
 
@@ -110,15 +84,6 @@ git clone --depth 1 https://github.com/truemar14/tmstack ~/projects/tmstack
 The environment cache keeps the clone for about a week, so a skill change
 reaches the cloud at the next cache rebuild, or when a session pulls and
 reruns the installer.
-
-What the skills need from the machine does not come with them. Set these on
-the cloud environment:
-
-- `FILE_HOST_URL` as an environment variable, and the file host's domain in a
-  custom network allowlist.
-- `FILE_HOST_TOKEN` stays out of environment variables, since anyone who uses
-  the environment can read those. Keep file-upload to local sessions until
-  the token can come from a network secret.
 
 The cloud GitHub proxy blocks the GraphQL API, so `gh pr` and `gh issue` fail
 there. file-pr and review-loop call `gh pr`, so they need a local session.
