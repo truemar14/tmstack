@@ -58,8 +58,9 @@ against it, then stop the server.
   account or service it needs. The section is read on other machines and in
   cloud sessions, so a precondition is something any reader can test against
   itself.
+- **Held back**: step 1 kept it unrun. It stays unrun and goes to step 4.
 
-Done when each candidate is green, red, or has a precondition.
+Done when each candidate is green, red, held back, or has a precondition.
 
 ## 3. Write the section
 
