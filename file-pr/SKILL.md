@@ -31,13 +31,12 @@ the harness has GitHub tools, take the same step through those.
    change blocks the filing. Done: every check the repo has is green on the
    rebased branch.
 6. **Show it.** A change with a visible result, a UI state, a rendered page,
-   CLI output, gets a screenshot, and a flow gets a short recording. Capture
-   it from the app, already running or started with the harness's `run`
-   skill or browser tools when it has them; otherwise ask the user for the
-   file. Keep the file locally and put its path in the description so the
-   user can drop it in themselves. Done: the
-   reader can see the result without checking out the branch, the description
-   says the media is pending, or the change has nothing visible to show.
+   CLI output, gets screenshots, and a flow gets a short recording as a GIF.
+   Capture, commit and link them as [Screenshots](#screenshots) describes.
+   Done: the image commits are on the branch and the Screenshots block is
+   drafted with every image linked at its commit's SHA; or the description
+   says the media is pending and why; or the change has nothing visible to
+   show.
 7. **Title and description.** Written by the rules below, then call the
    Skill tool with `unslop` and apply it to both. Done: both pass its rules.
 8. **Create or update.** Push with `git push -u origin HEAD`, adding
@@ -48,7 +47,8 @@ the harness has GitHub tools, take the same step through those.
    or temp directory, never inside the repo; a multi-line `--body` argument
    breaks on PowerShell quoting. Done:
    `gh pr view` shows the PR open against the right base with the new title
-   and body.
+   and body, and every image from step 6 passes the
+   [Screenshots](#screenshots) check.
 9. **Report** the PR URL to the user.
 
 ## Title
@@ -77,8 +77,9 @@ GOOD (illustrative; match the repo's usual tone, not these)
 
 > ✅ Uploads over 2 GB failed silently and left a spinner forever. They now stream in chunks and show an error with a retry when they fail.
 
-Place the screenshot or recording from step 6 right after the solution, where
-the reader wants proof.
+Place the `## Screenshots` section from step 6 right after the solution,
+where the reader wants proof. A block the repo requires at the top of every
+PR body, such as an attribution marker, stays first.
 
 When the change is easier to see than to describe, sketch it instead of
 narrating it. Pick the smallest view that makes the point, keep only the files,
@@ -112,3 +113,45 @@ with what it reaches beyond the diff.
 End the description with a short blurb naming the model and harness that made
 the changes. When the harness gives its own attribution line for pull
 requests, that line is the blurb.
+
+## Screenshots
+
+**Capture.** Run the app on the branch, already running or started with the
+harness's `run` skill or browser tools; with neither, ask the user for the
+files. When the app has sign-in, use a test account with made-up data, so
+no real person's data lands in the PR; when there is none, ask the user for
+one. A changed screen gets a before (base branch) and an after. When layout
+matters, capture each at phone width (390px) and desktop width (1440px). Save
+a PNG per screenshot and a GIF per recording in the harness's scratch or temp
+directory.
+
+**Host on GitHub.** The images live in the repo itself, in a commit that the
+next commit undoes, so the merged tree carries none of them; a squash merge
+keeps them out of the base branch's history too. This works in a private
+repo, where only people with access see them; a third-party image host would
+publish a private app's screens. On an update, add a new pair of commits only
+when the screenshots themselves change.
+
+1. Copy the files to `.github/pr-images/<name>.<ext>` on the PR branch and
+   commit them. Note the commit's full SHA.
+2. `git rm` those files in the next commit. Step 8's push sends both
+   commits.
+3. Link each image at that SHA, 400 pixels wide so a pair fits side by side:
+
+   ```markdown
+   ## Screenshots
+
+   | Before | After |
+   |---|---|
+   | <img src="https://github.com/<owner>/<repo>/blob/<SHA>/.github/pr-images/before.png?raw=true" width="400" alt="Before: <what it shows>"> | <img src="https://github.com/<owner>/<repo>/blob/<SHA>/.github/pr-images/after.png?raw=true" width="400" alt="After: <what it shows>"> |
+   ```
+
+**After a rebase**, in step 3 (Rebase) of a later run or in another skill,
+the image commits have new SHAs. Find each image's commit with
+`git log --diff-filter=A --format=%H -1 origin/<base>..HEAD -- .github/pr-images/<name>.<ext>`,
+and once the push is done, relink each image in the body to its own commit.
+
+**Check**, once the PR exists:
+`gh api --silent -H "Accept: application/vnd.github.object" "repos/<owner>/<repo>/contents/.github/pr-images/<name>.<ext>?ref=<SHA>"`
+succeeds for every image, and when the harness has browser tools, the PR page
+shows each one. A broken image gets fixed before step 9.
