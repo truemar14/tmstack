@@ -61,8 +61,9 @@ PR as ready, with the number of rounds it took.
   created, `git rebase --onto origin/<new base> <old base tip>` (a plain rebase
   replays the squashed commits and conflicts), retarget the PR with
   `gh pr edit --base <new base>` if GitHub did not, and force-push with
-  `--force-with-lease`. Say so in your reply before you push. On someone
-  else's branch, merge the new base in instead.
+  `--force-with-lease`. Say so in your reply before you push. When the PR
+  body links images from file-pr, relink them first as its Screenshots
+  section says. On someone else's branch, merge the new base in instead.
 - After the merge, run the post-merge step the user's instructions name for
   this project, such as redeploying a dev environment, and check it took.
 
