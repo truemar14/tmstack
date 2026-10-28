@@ -44,7 +44,7 @@ own marketplace; its README has the setup.
 
 | Skill | What it does |
 |---|---|
-| `file-pr/` | File a concise PR in nine steps with done conditions: branch, rebase, diff review, verify, screenshot or recording, title and description conventions with bad/good examples. |
+| `file-pr/` | File a concise PR in nine steps with done conditions: branch, rebase, diff review, verify, screenshots embedded from a throwaway commit (works in private repos), title and description conventions with bad/good examples. |
 | `html-communication/` | Plans, specs, findings, and UI mock variants as one self-contained HTML page, published as a private Artifact. |
 | `grilling/` | Interview the user in numbered rounds until every branch of a plan is settled. |
 | `catch-up/` | Answer "where were we?" in a session you lost track of: where it stopped, what is waiting on you, and the next step. Read only. |
