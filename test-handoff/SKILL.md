@@ -57,7 +57,7 @@ read. An earlier run, or a reason it should work, is not evidence.
 | Claim | Needs | Does not count |
 |---|---|---|
 | Fixed | The original symptom, retried and gone | The code changed |
-| Cause found | The symptom reproduced here, or the user's screenshot or log showing that cause | The code could produce it |
+| Cause found | That cause reproduced here, or the user's screenshot or log showing it | The code could produce it |
 | Tests pass | The test command's output, zero failures | A run before the last edit, or a rerun that passed after a failure |
 | Builds | The build command, exit 0 | Lint or typecheck passing |
 | Regression test works | Seen failing without the fix, passing with it | It passes once |
