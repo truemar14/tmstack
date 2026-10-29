@@ -23,9 +23,9 @@ the check.
 - Rebuild and reload first, so the target runs the current code.
 - Exercise the exact behaviour that changed, and one neighbour it could break.
 - Renamed or moved something a person sees (a page, a route, a label, a
-  button's text)? Search the project's end-to-end and release checks for the
-  old name; they find things by visible text and address, and some run only
-  after a release, where nothing else would tell you they broke.
+  button's text): search the project's end-to-end and release checks for the
+  old name and update every hit. They find things by visible text and address.
+  Some run only after a release, so nothing else shows they broke.
 - UI: look at it at desktop width, at phone width when the UI has one, and in
   light and dark if the app has both. Look at a screenshot of each, not only at logs.
 - Visual variants or mocks: open every one; a broken variant never reaches the
@@ -40,12 +40,11 @@ ships for, so this covers only its pages that also load on their own.
 Without Playwright either, the app is out of reach, as below.
 
 When the real target is out of reach (another machine, a signed-in account, a
-device), say exactly which part you could not check and why. A symptom you
-could not reproduce keeps its cause marked as a guess until the user's
-screenshot or log from the real target confirms it.
+device), say exactly which part you could not check and why.
 
-A test that fails once and then passes is a finding, not a flake. Make it fail
-every time (slow the stub, repeat the test), then fix the cause it shows.
+A test that fails once and then passes is a finding. Make it fail every time
+(run it in a loop, slow what it waits on), then fix the cause. When the cause
+is outside this change, or it never fails again, name it as unchecked.
 
 Done when each changed behaviour was seen working in the real target, or is
 named as unchecked with the reason.
@@ -58,7 +57,8 @@ read. An earlier run, or a reason it should work, is not evidence.
 | Claim | Needs | Does not count |
 |---|---|---|
 | Fixed | The original symptom, retried and gone | The code changed |
-| Tests pass | The test command's output, zero failures | A run before the last edit |
+| Cause found | The symptom reproduced here, or the user's screenshot or log showing that cause | The code could produce it |
+| Tests pass | The test command's output, zero failures | A run before the last edit, or a rerun that passed after a failure |
 | Builds | The build command, exit 0 | Lint or typecheck passing |
 | Regression test works | Seen failing without the fix, passing with it | It passes once |
 | A subagent did it | The diff, read | The subagent's report |
