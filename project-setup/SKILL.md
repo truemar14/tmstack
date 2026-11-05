@@ -12,8 +12,9 @@ rulebook means Claude, Cursor and Copilot can each pick up an issue or a branch
 where another stopped.
 
 Work on a branch and finish with a pull request. Change only the files named
-here, and read each one before you change it: an existing file is extended,
-never replaced.
+here, and read each one before you change it. An existing file is extended,
+with one exception: a tool's own rule file becomes a pointer in step 2, once
+every rule in it has moved to `AGENTS.md`.
 
 ## 1. Find what exists
 
@@ -27,8 +28,9 @@ Done when you hold every rule the user works by, each with where it lives now.
 
 ## 2. Write the files
 
-Each meaning gets a **single source of truth**. Follow
-`writing-for-agents/SKILL.md` for every file an agent reads.
+Each meaning gets a **single source of truth**. Call the Skill tool with
+`writing-for-agents` before you write, and follow it for every file an agent
+reads.
 
 1. **`AGENTS.md`**, a "Working here" section with one bullet per rule:
    - who works here: the agents by name, and that the same rules hold for each
@@ -47,7 +49,8 @@ Each meaning gets a **single source of truth**. Follow
      presence only, and never asks for one in chat
 2. **`CLAUDE.md`** holds `@AGENTS.md` and nothing else. A `.cursor/` rule or
    `.github/copilot-instructions.md`, where the user has one, becomes a
-   one-line pointer to `AGENTS.md`.
+   one-line pointer to `AGENTS.md`. Move each rule such a file holds into
+   `AGENTS.md` first, so nothing is lost when it shrinks.
 3. **`REVIEW.md`**: what a fresh reviewer checks in this codebase, the rules a
    diff can break that a linter cannot see.
 4. **`docs/verify.md`**: the proof an agent gives before it says done: what CI
@@ -74,6 +77,6 @@ outside the repo.
 
 ## 4. Hand over
 
-Open the pull request with the repo's own PR skill (`file-pr` here). In the
+Call the Skill tool with `file-pr` and open the pull request with it. In the
 reply, list the paste steps from step 3 and any label the claiming rule needs
 that does not exist yet.
