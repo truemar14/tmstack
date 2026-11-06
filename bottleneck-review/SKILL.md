@@ -22,11 +22,13 @@ without one is a guess, and the report says so where it keeps one.
 ## 1. Window and baseline
 
 Read the **baseline**: the previous report's link and headline numbers, kept
-in project memory (or, with no memory, at the end of the previous report,
-found where the user's instructions say documents go). The window runs from
-that report's date to today, or the last 14 days when there is none. Read the
-previous report in full. Its fixes are numbered; the user picks by commenting
-on one or by saying so in chat. Collect those picks and what was built since.
+in project memory. With no memory, it sits at the end of the previous report:
+look where the user's instructions say documents go, or else among the user's
+published artifacts for the latest one titled "Bottleneck review". The
+window runs from that report's date to today, or the last 14 days when there
+is none. Read the previous report in full. Its fixes are numbered; the user
+picks by commenting on one or by saying so in chat. Collect those picks and
+what was built since.
 
 Done when you have the window's two dates, and either the previous report with
 its picks (possibly none) or a note that this is the first run.
@@ -49,9 +51,10 @@ reach gets the reason, and its rows stay out.
   not readable, give minutes and say where the user reads the money.
 - **PRs**: open to merge time, split into those that merge on green checks
   and those that wait for the user's word. Open PRs and their age.
-- **Git history** of the main branch: commits that repeat a manual step
-  (screenshot commits, merges of main into branches, release pushes), and the
-  shared files that change most often.
+- **Git history** of the main branch and the commits of every PR merged in
+  the window, since a squash merge keeps branch commits off main: commits
+  that repeat a manual step (screenshot commits, merges of main into
+  branches, release pushes), and the shared files that change most often.
 - **Scheduled runs**: their prompts, recent results, and any rule copied into
   several prompts that should live in the repo once.
 - **Releases**: failed, held or late releases, and how they were noticed.
@@ -64,11 +67,12 @@ or why it could not be read.
 For each picked fix, check that it is live (a merged PR, a running job, a
 changed file) and measure the change against the baseline's number. A fix
 that is merged but shows no change is a finding, not a success. With no
-picks, re-measure the previous report's top three bottlenecks instead.
+picks, re-measure the previous report's top three bottlenecks instead. On a
+first run there is nothing to compare: write "First run" in this section.
 
 Done when every picked fix, or each of those three rows, has a status (live
 and measured, live and not yet measurable, not done, or better or worse by a
-number) with its evidence.
+number) with its evidence, or the section says "First run".
 
 ## 4. Rank
 
@@ -118,15 +122,14 @@ reason, or listed as a disagreement.
 Sections, in order: Summary (three bullets and the recommended order), What
 got better, Where work got stuck, Easy to automate, Recommended order, Where
 the reviews disagree, How this was measured (the sources, and each review's
-verdict with what it changed). Call the Skill tool with `unslop` on the
-report. Publish it where the user's instructions say documents go, as a
-document the user can comment on; with no such place, call the Skill tool
-with `html-communication`.
+verdict with what it changed). Title it "Bottleneck review" and the date.
+Call the Skill tool with `unslop` on the report. Publish it where the user's
+instructions say documents go, as a document the user can comment on; with no
+such place, call the Skill tool with `html-communication`.
 
 Then reply to the user in a few lines: the top bottleneck with its number,
 the recommended fixes by number with which need their word, and the link.
-Save the new baseline (the report's link and headline numbers) in project
-memory, or at the end of the report when there is no memory.
+Save the new baseline where step 1 reads it.
 
 Done when the report is published, the reply is sent, and the baseline is
 saved.
