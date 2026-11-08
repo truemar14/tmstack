@@ -24,10 +24,13 @@ Read the repo's `AGENTS.md`, `CLAUDE.md`, `.cursor/` rules,
 the user where else rules live today: a Claude project's instructions, memory
 notes, a tool's settings page. Ask for those rules as text.
 
-Then settle who owns the repo. A **solo repo** is the user's alone: agents may
-merge safe PRs there. A **team repo** is shared with other people or owned by
-an employer: its team's rules win, agents open PRs and never merge, and the
-rulebook from step 2 goes to the team as a proposal in its own PR.
+Then ask the user who owns the repo; the account it sits under does not
+tell you. A **solo repo** is the user's alone. A **team repo** is shared with
+other people or owned by an employer, and there the team's own rules, review
+and release process win: agents open PRs and never merge, there is no owner
+check and no new label, and the rulebook goes to the team as a proposal in
+step 5's PR. In a team repo, step 4 runs only once the user confirms the
+employer allows its code in a cloud environment.
 
 Done when you hold every rule the user works by, each with where it lives
 now, and you know whether the repo is solo or team.
@@ -48,15 +51,17 @@ reads.
    - the review: who reviews, with which file, before merge
    - the **merge gate**: what may merge on green checks, and what waits for
      the owner's word (money, deleting people's data, deploy machinery are the
-     usual three); name the deploy machinery by path. In a team repo the gate
-     is the team's own review, and agents never merge
-   - the release step after a merge, how an agent confirms it is live (an
-     endpoint or header that names the live commit, and how a cloud session
-     reaches it), and that production goes out only on the owner's word
-   - the **owner check**: what only the owner's own device shows (an
-     installed phone app, the camera, push, a payment form on the phone),
-     asked once per change after it is live, as one card in the thread or an
-     issue labelled `needs-owner`; every other check is the agent's
+     usual three); name the deploy machinery by path
+   - where the repo releases: the release step after a merge, how an agent
+     confirms it is live (an endpoint or header that names the live commit,
+     and how a cloud session reaches it), and that production goes out only
+     on the owner's word
+   - the **owner check**, in a solo repo: what only the owner's own device
+     shows (an installed phone app, the camera, push, a payment form on the
+     phone), asked once per change after it is live. A Claude thread asks
+     with one card; an agent without cards opens an issue titled "Check on
+     your phone: <what>" labelled `needs-owner`. Every other check is the
+     agent's
    - secrets: each agent reads its own environment, checks a secret by
      presence only, and never asks for one in chat; `AGENTS.md` names each
      secret by name, never by value
@@ -81,13 +86,14 @@ Done when every rule from step 1 has exactly one home in these files, and
 
 Write the replacement text for each tool's own settings, for the user to
 paste: a line that says to follow `AGENTS.md` and that `AGENTS.md` wins when
-they differ, plus only what that one tool needs. For a Claude project that is where it
-posts, which cloud environment holds its secrets, and that a pick waiting on
-the user goes on the morning decisions list ([`CLAUDE-PROJECT.md`](CLAUDE-PROJECT.md)),
-not on a new card in each thread; the owner check keeps its own card. Give
-the user the text. Settings pages are the user's to change. A rule found in
-project memory moves to the repo, and its memory line becomes a pointer to
-`AGENTS.md`.
+they differ, plus only what that one tool needs. For a Claude project that is
+where it posts and which cloud environment holds its secrets. Once the
+morning decisions list from step 4 runs, add that a pick waiting on the user
+goes as one line in the `open-decisions.md` memory file (the question, the
+recommended answer, the owning thread; removed once answered), not on a new
+card, and that the owner check keeps its card. Give the user the text.
+Settings pages are the user's to change; project memory is handled in step
+4.
 
 Done when the user has the replacement text for every place a rule lived
 outside the repo.
@@ -99,11 +105,11 @@ When the user works on this repo in a Claude project, read
 environment, project memory and routines. Skip this step for a repo worked
 on only from a terminal or an editor.
 
-Done when the environment and memory are set up, or handed to the user as
-steps with their text, and the routines are settled as that file says.
+Done when every Done line in that file holds.
 
 ## 5. Hand over
 
-Call the Skill tool with `file-pr` and open the pull request with it. In the
-reply, list the paste steps from steps 3 and 4 and any label from the
+Call the Skill tool with `file-pr` and open the pull request with it, then
+stop: the user, or in a team repo the team, merges it. In the reply, list the
+paste steps from steps 3 and 4 and, in a solo repo, any label from the
 claiming rule, `needs-owner` and `bug` that does not exist yet.
