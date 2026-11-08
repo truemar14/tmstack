@@ -36,10 +36,6 @@ such as a private one:
 ~/projects/tmstack/install.sh ~/projects/my-private-skills
 ```
 
-The installer does not set up the speak plugin for voice mode. It lives in
-its own repo, [speak-mod](https://github.com/truemar14/speak-mod), with its
-own marketplace; its README has the setup.
-
 ## Skills
 
 | Skill | What it does |
