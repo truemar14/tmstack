@@ -40,14 +40,14 @@ such as a private one:
 
 | Skill | What it does |
 |---|---|
-| `file-pr/` | File a concise PR in nine steps with done conditions: branch, rebase, diff review, verify, screenshots and recordings committed to the branch and undone in the next commit (works in private repos), title and description conventions with bad/good examples. |
+| `file-pr/` | File a concise PR in nine steps with done conditions: branch, update from the base, diff review, verify, screenshots and recordings committed to the branch and undone in the next commit (works in private repos), title and description conventions with bad/good examples. |
 | `html-communication/` | Plans, specs, findings, and UI mock variants as one self-contained HTML page, published as a private Artifact. |
 | `grilling/` | Interview the user in numbered rounds until every branch of a plan is settled. |
 | `catch-up/` | Answer "where were we?" in a session you lost track of: where it stopped, what is waiting on you, and the next step. Read only. |
 | `domain-modeling/` | Maintain a project's glossary (`CONTEXT.md`) and decision records (ADRs) while designing. |
 | `writing-for-agents/` | The rules for writing skills, `AGENTS.md` and any other document an agent reads. Every skill here follows them. |
 | `unslop/` | Cut AI tells from prose people read: PR descriptions, docs, pages, posts. |
-| `review-loop/` | Review a PR with a fresh reviewer each round, fix, and repeat until a round is clean; merge only when asked. Works through every open PR in dependency order. |
+| `review-loop/` | Review a PR with a fresh reviewer each round, fix, and repeat until a round is clean; merge when asked or when the repo's merge gate allows, then confirm the merge is live. Works through every open PR in dependency order. |
 | `test-handoff/` | Check a change in the real app before handing it over, then give the user numbered test scenarios and the steps only they can do. |
 | `project-setup/` | Put a repo's house rules in `AGENTS.md`, `REVIEW.md`, `docs/verify.md` and the PR template, so Claude, Cursor and Copilot work by one rulebook, and shrink each tool's settings to a pointer. For a Claude project, also its cloud environment, memory and routines. |
 | `bottleneck-review/` | Measure where agentic work got stuck and what is easy to automate, from chat, CI minutes, PR waits and git history; two fresh reviews check it, and the report goes to the user to pick from. Report only. |

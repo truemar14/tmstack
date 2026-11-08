@@ -1,6 +1,6 @@
 ---
 name: review-loop
-description: Review a pull request with fresh eyes until a round comes back clean, then merge if asked. Use when the user asks to review and merge a PR, to review every open PR and merge what is ready, or for a second review pass.
+description: Review a pull request with fresh eyes until a round comes back clean, then merge when asked or when the repo's merge gate allows, and confirm the merge is live. Use when the user asks to review and merge a PR, to review every open PR and merge what is ready, or for a second review pass.
 metadata:
   platform: [win32, linux, darwin]
   scope: fleet
@@ -15,7 +15,6 @@ diff and the PR's goal, and none of the conversation that produced it.
 - Claude Code: a subagent through the Agent tool, given the PR number or the
   diff range, the goal in one line, and the repo's own review rules
   (`CLAUDE.md`, `REVIEW.md`, `CONTRIBUTING.md`) when they exist.
-- Codex: a new `codex exec` run with the same brief.
 - When the user names a reviewer (another harness, another model), use that
   one.
 
@@ -53,25 +52,53 @@ on the current head is clean, or the PR is reported blocked.
 
 ## 3. Merge
 
-Merge only when the user asked for a merge in this task; otherwise report the
-PR as ready, with the number of rounds it took.
+A PR merges on a clean round when the user asked for a merge in this task, or
+when the repo's **merge gate** lets it merge on green. The gate is in the
+repo's `AGENTS.md` or the user's instructions: what may merge on green, and
+what waits for the owner's word. A PR the gate holds merges only when the
+user asks in this task to merge that PR by name; a batch ask merges only what
+the gate allows. A held PR without that ask is reported ready, with what it
+waits for; section 4 covers its owner check. With no ask and no gate, report
+it ready, with the number of rounds it took.
 
 - Use the repo's merge method: the one recent merged PRs used.
-- A stacked PR whose base just merged needs its base updated. On a branch you
-  created, `git rebase --onto origin/<new base> <old base tip>` (a plain rebase
-  replays the squashed commits and conflicts), retarget the PR with
-  `gh pr edit --base <new base>` if GitHub did not, and force-push with
-  `--force-with-lease`. Say so in your reply before you push. On someone
-  else's branch, merge the new base in instead. After a rebase, relink any
-  images the PR body takes from file-pr, as its Screenshots section says.
-- After the merge, run the post-merge step the user's instructions name for
-  this project, such as redeploying a dev environment, and check it took.
+- A stacked PR whose base just merged is retargeted with `gh pr edit --base
+  <new base>` if GitHub did not, then brought up to date with the new base,
+  merged in or rebased by the condition in file-pr's step 3. On someone
+  else's branch, always merge. To rebase a branch you created, `git rebase
+  --onto origin/<new base> <old base tip>` (a plain rebase replays the
+  squashed commits and conflicts), then force-push with `--force-with-lease`.
+  Say so in your reply before you push. After a rebase, relink any images
+  the PR body takes from file-pr, as its Screenshots section says.
 
 Done when every PR in scope is merged, or reported ready, or reported blocked
 with the finding that blocks it.
 
+## 4. Confirm it is live
+
+Where the repo's rules or the user's instructions name a release step after a
+merge, run it. Where they name a way to read the **live commit** (a header,
+an endpoint, a tool), read it and check that it contains the merge, using
+the commit the merge put on the base (the PR's merge commit, never the branch
+head, which a squash leaves off the base): `git fetch origin <base> && git
+merge-base --is-ancestor <merge commit> <live commit>`. A merge that lands
+during another release goes out with the next one, so read again until it
+is in or the wait runs out: the wait the rules give, or 20 minutes when they
+give none. When it runs out, say the merge is not live yet, and leave the
+cause to whoever can see the release, rather than guessing.
+
+When the change touches what only the owner's own device shows, as the
+repo's rules list it, hand that one check to the user the way those rules
+say: once the merge is live, when a merge is not live in time, or when a PR
+the gate holds is reported ready. Skip it when the PR's author already
+opened the issue or card for it.
+
+Done when each named release step has run and reported success, each merged
+PR is confirmed live, reported not live in time, or the repo names no live
+commit to read, and each owner check the changes need is handed over.
+
 ## Report
 
-One line per PR: merged, ready, or blocked, and the round count. For a blocked
-PR, the open finding in one sentence. Then the false findings, one line
-each with the reason.
+One line per PR: merged and live (or not live yet), ready, or blocked, and
+the round count. For a blocked PR, the open finding in one sentence. Then
+the false findings, one line each with the reason.

@@ -1,6 +1,6 @@
 ---
 name: file-pr
-description: File a concise pull request. Use when the user asks to file, open, or create a PR.
+description: File a concise pull request. Use when the user asks to file, open, or create a PR, and before you open one yourself.
 metadata:
   platform: [win32, linux, darwin]
   scope: fleet
@@ -11,25 +11,32 @@ metadata:
 Filing stops at the first step whose done condition is out of reach. Report
 the blocker to the user with its output.
 
-The `gh` commands below need a signed-in `gh`. Where it is not signed in and
-the harness has GitHub tools, take the same step through those.
+The `gh` commands below need a signed-in `gh`. Where it is not signed in, or
+a `gh pr` call fails (a cloud proxy can block the GraphQL API), take the same
+step through the harness's GitHub tools.
 
 ## Steps
 
 1. **Branch.** Work on the base branch moves to a branch named for the change
    first. Commit the work that serves the goal; unrelated edits stay out of the
-   commits. Done: `git log <base>..HEAD` holds only commits for the change.
+   commits. Done: `git log --no-merges <base>..HEAD` holds only commits for the
+   change.
 2. **Existing PR.** `gh pr list --head <branch>` says whether this branch
    already has a PR. Done: you know whether step 8 creates or updates.
-3. **Rebase.** Fetch, then rebase onto the base branch, usually `main` unless
-   the user's instructions name another. Resolve conflicts on the way. A stale branch conflicts and
-   wastes a review round. Done: the branch replays cleanly on the base tip.
+3. **Update.** Fetch the base branch, usually `main` unless the user's
+   instructions name another, and bring the branch up to date with it, the
+   way the repo's rules say when they name one. Otherwise rebase a branch
+   that was never pushed, and merge the base into one that was, since a
+   rewritten pushed branch needs a force-push some sessions cannot make.
+   Resolve conflicts on the way. A stale branch conflicts and wastes a
+   review round. Done: the branch contains the base tip and has no
+   conflicts.
 4. **Review the diff** against the base branch. Every hunk serves the goal;
    anything else comes out before filing. Done: every hunk accounted for.
 5. **Verify.** Run whichever of typecheck, lint and tests focused on the
    change the repo has. Fix what the change broke; a failure outside the
-   change blocks the filing. Done: every check the repo has is green on the
-   rebased branch.
+   change blocks the filing. Done: every check named above that the
+   repo has is green on the updated branch.
 6. **Show it.** A change with a visible result, a UI state, a rendered page,
    CLI output, gets screenshots, and a flow gets a short recording as a GIF.
    Capture, commit and link them as [Screenshots](#screenshots) describes.
@@ -40,7 +47,8 @@ the harness has GitHub tools, take the same step through those.
 7. **Title and description.** Written by the rules below, then call the
    Skill tool with `unslop` and apply it to both. Done: both pass its rules.
 8. **Create or update.** Push with `git push -u origin HEAD`, adding
-   `--force-with-lease` when the branch was pushed before the rebase. New PR:
+   `--force-with-lease` when the repo's rules had step 3 rebase a pushed
+   branch. New PR:
    `gh pr create --base <base> --title <title> --body-file <file>` without
    `--draft`, so review automation runs. Existing PR: `gh pr edit --title
    <title> --body-file <file>`. Write the body file in the harness's scratch
@@ -146,7 +154,7 @@ when the screenshots themselves change.
    | <img src="https://github.com/<owner>/<repo>/blob/<SHA>/.github/pr-images/before.png?raw=true" width="400" alt="Before: <what it shows>"> | <img src="https://github.com/<owner>/<repo>/blob/<SHA>/.github/pr-images/after.png?raw=true" width="400" alt="After: <what it shows>"> |
    ```
 
-**After a rebase**, in step 3 (Rebase) of a later run or in another skill,
+**After a rebase**, in step 3 (Update) of a later run or in another skill,
 the image commits have new SHAs. Find each image's commit with
 `git log --diff-filter=A --format=%H -1 origin/<base>..HEAD -- .github/pr-images/<name>.<ext>`,
 and once the push is done, relink each image in the body to its own commit.
