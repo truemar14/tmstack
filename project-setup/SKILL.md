@@ -26,11 +26,11 @@ notes, a tool's settings page. Ask for those rules as text.
 
 Then ask the user who owns the repo; the account it sits under does not
 tell you. A **solo repo** is the user's alone. A **team repo** is shared with
-other people or owned by an employer, and there the team's own rules, review
-and release process win: agents open PRs and never merge, there is no owner
-check and no new label, and the rulebook goes to the team as a proposal in
-step 5's PR. In a team repo, step 4 runs only once the user confirms the
-employer allows its code in a cloud environment.
+other people or owned by an employer: its team's own rules, review and
+release process win, step 2 writes the team form of each rule, and the
+rulebook goes to the team as a proposal in step 5's PR. In a team repo, ask
+too whether the employer allows its code in a cloud environment; step 4 runs
+only on a yes.
 
 Done when you hold every rule the user works by, each with where it lives
 now, and you know whether the repo is solo or team.
@@ -44,24 +44,29 @@ reads.
 1. **`AGENTS.md`**, a "Working here" section with one bullet per rule:
    - who works here: the agents by name, and that the same rules hold for each
    - claiming work: how an issue is marked taken (a label such as
-     `in-progress`, or an open PR that names it)
+     `in-progress`, or an open PR that names it). Team form: an open PR that
+     names it, so no new label
    - branch names that say who wrote the work: `<agent>/<issue>-<few-words>`
    - CI budget: how many runs a PR may use, and which checks run locally first
    - shared files that take one PR at a time, and to merge main in, not rebase
    - the review: who reviews, with which file, before merge
    - the **merge gate**: what may merge on green checks, and what waits for
      the owner's word (money, deleting people's data, deploy machinery are the
-     usual three); name the deploy machinery by path
+     usual three); name the deploy machinery by path. Team form: agents open
+     PRs and the team merges
    - where the repo releases: the release step after a merge, how an agent
      confirms it is live (an endpoint or header that names the live commit,
      and how a cloud session reaches it), and that production goes out only
-     on the owner's word
-   - the **owner check**, in a solo repo: what only the owner's own device
+     on the owner's word. Team form: the team's release process, by pointer
+   - the **owner check**, solo repo only: what only the owner's own device
      shows (an installed phone app, the camera, push, a payment form on the
-     phone), asked once per change after it is live. A Claude thread asks
-     with one card; an agent without cards opens an issue titled "Check on
-     your phone: <what>" labelled `needs-owner`. Every other check is the
-     agent's
+     phone), checked once per change once it is live. A Claude thread that
+     merged its own safe PR asks with one card once the merge is live. In
+     every other case (a PR that waits for the owner's merge, an agent
+     without cards, a merge not live in time) the PR's author opens an issue
+     titled "Check on your phone: <what>", labelled `needs-owner`, when the
+     PR is ready. "Something's off" becomes a `bug` issue with what the owner
+     describes. Every other check is the agent's
    - secrets: each agent reads its own environment, checks a secret by
      presence only, and never asks for one in chat; `AGENTS.md` names each
      secret by name, never by value
@@ -76,8 +81,8 @@ reads.
    change; what it could not check, named.
 5. **`.github/pull_request_template.md`** with the sections What changed,
    Screenshots, How I verified, Not checked, Merge gate.
-6. **`docs/operations.md`**, only when scheduled agent runs exist: one table
-   row per run, with when and what it does.
+6. **`docs/operations.md`**, when scheduled agent runs exist or step 4 plans
+   one: one table row per run, with when and what it does.
 
 Done when every rule from step 1 has exactly one home in these files, and
 `AGENTS.md` points to each of the others.
@@ -86,14 +91,9 @@ Done when every rule from step 1 has exactly one home in these files, and
 
 Write the replacement text for each tool's own settings, for the user to
 paste: a line that says to follow `AGENTS.md` and that `AGENTS.md` wins when
-they differ, plus only what that one tool needs. For a Claude project that is
-where it posts and which cloud environment holds its secrets. Once the
-morning decisions list from step 4 runs, add that a pick waiting on the user
-goes as one line in the `open-decisions.md` memory file (the question, the
-recommended answer, the owning thread; removed once answered), not on a new
-card, and that the owner check keeps its card. Give the user the text.
-Settings pages are the user's to change; project memory is handled in step
-4.
+they differ, plus only what that one tool needs (for a Claude project: where
+it posts, and which cloud environment holds its secrets). Give the user the
+text. Settings pages are the user's to change.
 
 Done when the user has the replacement text for every place a rule lived
 outside the repo.
@@ -101,15 +101,17 @@ outside the repo.
 ## 4. Set up the Claude project
 
 When the user works on this repo in a Claude project, read
-[`CLAUDE-PROJECT.md`](CLAUDE-PROJECT.md) and follow it: the cloud
-environment, project memory and routines. Skip this step for a repo worked
-on only from a terminal or an editor.
+[`CLAUDE-PROJECT.md`](CLAUDE-PROJECT.md) and follow its "Before the PR"
+sections: the cloud environment, project memory, and the routines the user
+wants. Skip this step for a repo worked on only from a terminal or an editor.
 
-Done when every Done line in that file holds.
+Done when every Done line in those sections holds.
 
 ## 5. Hand over
 
 Call the Skill tool with `file-pr` and open the pull request with it, then
 stop: the user, or in a team repo the team, merges it. In the reply, list the
-paste steps from steps 3 and 4 and, in a solo repo, any label from the
-claiming rule, `needs-owner` and `bug` that does not exist yet.
+paste steps from steps 3 and 4, any label the solo rules need that does not
+exist yet (the claiming label, `needs-owner`, `bug`), and the "After the
+merge" items from `CLAUDE-PROJECT.md` for the session that picks up once the
+PR has merged.
