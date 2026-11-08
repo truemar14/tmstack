@@ -71,7 +71,9 @@ source notice in its `LICENSE.txt`. Everything else is MIT, see `LICENSE`.
 A cloud session runs on a fresh container that never sees your machine's
 `~/.claude`, but it reads the container's own, and the environment's setup
 script runs before Claude Code starts. So the install is the same as on a
-machine, done by the setup script:
+machine, done by the setup script. In a Claude project, open Project
+settings, then the cloud environment menu, then the gear beside the selected
+environment, and paste this under Setup script:
 
 ```bash
 mkdir -p ~/.claude ~/projects
@@ -79,12 +81,20 @@ git clone --depth 1 https://github.com/truemar14/tmstack ~/projects/tmstack
 ~/projects/tmstack/install.sh
 ```
 
-The environment cache keeps the clone for about a week, so a skill change
-reaches the cloud at the next cache rebuild, or when a session pulls and
-reruns the installer.
+Only sessions that start after the change run it. The environment cache
+keeps the clone for about a week, so a skill change reaches the cloud at the
+next cache rebuild, or when a session pulls and reruns the installer.
+
+The script does not bring a private repo with your own `AGENTS.md`. Add that
+repo to the project's repositories in Project settings instead. Each session
+then checks it out next to the project's code, and Claude Code reads its
+`CLAUDE.md`, and through it `AGENTS.md`, as instructions. Its skills are not
+installed, which suits skills that name your machines. Sessions can push to
+a repo added this way, as to any other project repo.
 
 The cloud GitHub proxy blocks the GraphQL API, so `gh pr` and `gh issue` fail
-there. file-pr and review-loop call `gh pr`, so they need a local session.
+there. A cloud session does the `gh pr` steps of file-pr and review-loop
+with its GitHub tools instead.
 
 The `metadata` block in each frontmatter (`platform`, `scope`, `requires`)
 is this repo's own convention, not standard skill frontmatter. The installer
