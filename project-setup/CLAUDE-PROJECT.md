@@ -52,9 +52,10 @@ Two modes. **Report only**: the routine reads, posts in the project's threads
 and chat, and writes only its own memory lines and its own shared files; it
 never branches, pushes, opens a PR or merges. **Opens PRs**: it also
 branches and opens PRs; in a solo repo it merges a PR the merge gate in
-`AGENTS.md` calls safe, once its checks and review pass. In a team repo only report-only routines
-run. Every routine prompt says to treat each run as fresh, read `AGENTS.md`
-first and never release to production, and states its mode.
+`AGENTS.md` calls safe, once its checks and review pass. In a team repo
+only report-only routines run. Every routine prompt says to treat each run
+as fresh, read `AGENTS.md` first and never release to production, and states
+its mode.
 
 Offer these to the user in order, by name and purpose:
 
