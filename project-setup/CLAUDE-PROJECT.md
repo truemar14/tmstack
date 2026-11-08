@@ -43,15 +43,16 @@ existing rule lines in place; they become pointers after the merge.
   or material an employer keeps internal. For a team repo, point to where a
   system is documented instead of describing it.
 
-Done when `MEMORY.md` and `open-decisions.md` exist and `MEMORY.md` points to
-every topic file.
+Done when `MEMORY.md` exists and points to every topic file, and
+`open-decisions.md` exists if the user wants routine 1.
 
 ### Routines
 
-Two modes. **Report only**: the routine posts in its thread and updates its
-own memory lines, nothing else. **Opens PRs**: it also branches and opens
-PRs; in a solo repo it merges a PR the merge gate in `AGENTS.md` calls safe,
-once its checks and review pass. In a team repo only report-only routines
+Two modes. **Report only**: the routine reads, posts in the project's threads
+and chat, and writes only its own memory lines and its own shared files; it
+never branches, pushes, opens a PR or merges. **Opens PRs**: it also
+branches and opens PRs; in a solo repo it merges a PR the merge gate in
+`AGENTS.md` calls safe, once its checks and review pass. In a team repo only report-only routines
 run. Every routine prompt says to treat each run as fresh, read `AGENTS.md`
 first and never release to production, and states its mode.
 
@@ -77,8 +78,9 @@ Offer these to the user in order, by name and purpose:
    automate.
 
 Done when the user has said yes or no to routine 1, and each routine the user
-wants has its row in `docs/operations.md`. Routines start after the merge,
-because their prompts read the merged `AGENTS.md`.
+wants has its row in `docs/operations.md`, which `AGENTS.md` points to.
+Routines start after the merge, because their prompts read the merged
+`AGENTS.md`.
 
 ## After the merge
 

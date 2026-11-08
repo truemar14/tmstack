@@ -111,7 +111,9 @@ Done when every Done line in those sections holds.
 
 Call the Skill tool with `file-pr` and open the pull request with it, then
 stop: the user, or in a team repo the team, merges it. In the reply, list the
-paste steps from steps 3 and 4, any label the solo rules need that does not
-exist yet (the claiming label, `needs-owner`, `bug`), and the "After the
-merge" items from `CLAUDE-PROJECT.md` for the session that picks up once the
-PR has merged.
+paste steps from steps 3 and 4, and any label the solo rules need that does
+not exist yet (the claiming label, `needs-owner`, `bug`). When step 4 ran,
+also list the "After the merge" items from `CLAUDE-PROJECT.md` for the
+session that picks up once the PR has merged, and state whether the repo is
+solo or team and that the employer allowed cloud work, so that session has
+both answers.
