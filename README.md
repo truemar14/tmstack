@@ -53,7 +53,7 @@ own marketplace; its README has the setup.
 | `unslop/` | Cut AI tells from prose people read: PR descriptions, docs, pages, posts. |
 | `review-loop/` | Review a PR with a fresh reviewer each round, fix, and repeat until a round is clean; merge only when asked. Works through every open PR in dependency order. |
 | `test-handoff/` | Check a change in the real app before handing it over, then give the user numbered test scenarios and the steps only they can do. |
-| `project-setup/` | Put a repo's house rules in `AGENTS.md`, `REVIEW.md`, `docs/verify.md` and the PR template, so Claude, Cursor and Copilot work by one rulebook, and shrink each tool's settings to a pointer. |
+| `project-setup/` | Put a repo's house rules in `AGENTS.md`, `REVIEW.md`, `docs/verify.md` and the PR template, so Claude, Cursor and Copilot work by one rulebook, and shrink each tool's settings to a pointer. For a Claude project, also its cloud environment, memory and routines. |
 | `wait-what/` | Restate the last reply in plain words: what happened, what it means, the next step. |
 
 The skills call each other. file-pr sketches a change as a file tree or call
