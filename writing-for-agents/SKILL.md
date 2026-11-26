@@ -16,9 +16,9 @@ When the document you are writing is a skill, read
 [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md) for frontmatter, invocation choice,
 and router skills.
 
-Leading words stay. The `unslop` skill's plain-word rules are for prose people
-read; a document for an agent keeps its _frontier_, _relentless_ and
-_idempotent_.
+When the repo that holds the document has its own rules for it (a
+`CONTRIBUTING.md` or a section of `AGENTS.md`), read them first. They add to
+this skill.
 
 ## Context pointers
 
@@ -178,6 +178,10 @@ state the target behaviour ("write one-line comments") so the banned one is
 never spoken. A prohibition earns its place only as a hard guardrail you
 cannot phrase positively; even then, pair it with the positive target so
 attention lands on what to do.
+
+Leading words survive an `unslop` pass. Its plain-word rules are for prose
+people read; a document for an agent keeps its _frontier_, _relentless_ and
+_idempotent_.
 
 ## Pruning
 

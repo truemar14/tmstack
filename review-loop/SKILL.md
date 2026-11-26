@@ -38,16 +38,19 @@ written down.
 2. Verify each finding against the source. Fix the real ones; the false ones
    go in the report with the reason, since the reviewer's findings never
    appear on the PR.
-3. Push, then check CI on the new head, and work any new review-bot or human
-   comments. Where the repo's rules ration CI runs per PR, run the rounds on
-   the local head and push once a round is clean, so the PR gets one run;
-   then work the comments: check each against the source, fix the real ones, reply with
-   the reason to the rest, and keep the PR to its original goal.
+3. Where the repo's rules ration CI runs per PR, do not push between rounds:
+   repeat steps 1 and 2 on the local head, with the repo's local checks in
+   place of CI, until a round is clean, then push once, so the fixes cost one
+   run. Otherwise push after each round. Then check CI on the new head, and
+   work any new review-bot or human comments: check each against the source,
+   fix the real ones, reply with the reason to the rest, and keep the PR to
+   its original goal.
 
 A round is **clean** when a fresh reviewer, looking at the current head,
-returns no real findings, CI is green, and every review thread on the PR is
-addressed. A round that needed fixes is never clean,
-because the fixes themselves are unreviewed. Repeat rounds until one is clean.
+returns no real findings, CI is green (on a rationed repo, the local checks
+until that one push), and every review thread on the PR is addressed. A
+round that needed fixes is never clean, because the fixes themselves are
+unreviewed. Repeat rounds until one is clean.
 After three rounds in a row that each needed fixes, stop and report the PR as
 blocked with the findings that keep coming back. Done when the latest round
 on the current head is clean, or the PR is reported blocked.
