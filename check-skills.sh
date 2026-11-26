@@ -45,14 +45,28 @@ done
 # directory a row.
 if [[ -f $REPO/README.md ]]; then
   listed=$(sed -n 's/^| `\([^`/]*\)\/` |.*/\1/p' "$REPO/README.md" | sort)
-  present=$(for s in "$REPO"/*/SKILL.md; do [[ -f $s ]] && basename "$(dirname "$s")"; done | sort)
+  present=$(for s in "$REPO"/*/SKILL.md; do if [[ -f $s ]]; then basename "$(dirname "$s")"; fi; done | sort)
   for n in $(comm -23 <(echo "$present") <(echo "$listed")); do problem "README.md: no row for skill '$n'"; done
   for n in $(comm -13 <(echo "$present") <(echo "$listed")); do problem "README.md: row for '$n', which is not a skill directory"; done
 fi
 
-# Em dash, en dash and arrows (U+2014, U+2013, U+2190, U+2192, U+2194, U+21D2, U+27F6).
-marks=$(LC_ALL=C.UTF-8 git -C "$REPO" grep -n -I -P '[\x{2014}\x{2013}\x{2190}\x{2192}\x{2194}\x{21D2}\x{27F6}]' -- . ':!unslop/SKILL.md' | cut -d: -f1,2 || true)
-[[ -z $marks ]] || problem "em dash, en dash or arrow at (write a period, a comma or words):"$'\n'"$marks"
+# Em dash, en dash and arrows (U+2014, U+2013, U+2190, U+2192, U+2194, U+21D2, U+27F6), as fixed
+# UTF-8 bytes, so the check needs neither PCRE nor a UTF-8 locale. git grep exits 1 on no match;
+# anything above that is a problem, not a pass. A directory outside git has no tracked files to check.
+if ! git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1; then
+  echo "not a git repo: skipped the dash and arrow check"
+else
+  set +e
+  marks=$(git -C "$REPO" grep -n -I -F -e $'\xe2\x80\x94' -e $'\xe2\x80\x93' -e $'\xe2\x86\x90' -e $'\xe2\x86\x92' \
+    -e $'\xe2\x86\x94' -e $'\xe2\x87\x92' -e $'\xe2\x9f\xb6' -- . ':!unslop/SKILL.md' 2>&1)
+  status=$?
+  set -e
+  if (( status == 0 )); then
+    problem "em dash, en dash or arrow at (write a period, a comma or words):"$'\n'"$(cut -d: -f1,2 <<<"$marks")"
+  elif (( status > 1 )); then
+    problem "could not check for dashes and arrows: $marks"
+  fi
+fi
 
 if [[ -n ${PRIVATE_NAMES:-} ]]; then
   terms=$(printf '%s\n' "$PRIVATE_NAMES" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; /^$/d')

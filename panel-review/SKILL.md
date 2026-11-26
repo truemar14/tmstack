@@ -62,18 +62,21 @@ Done when every finding has a verdict with its evidence.
 
 Sort the real and unclear findings into three groups:
 
-- **Agreed**: every reviewer raised it.
+- **Agreed**: raised by more than one reviewer, and no reviewer took the
+  other side.
 - **Disputed**: reviewers took opposite sides. Give each side in one line and
   your verdict from the source.
-- **One reviewer only**: raised by one, not contradicted by another.
+- **One reviewer only**: raised by one, and no reviewer took the other side.
 
 A finding raised by one reviewer is not weaker for it: the check decides, not
 the count. Done when each real or unclear finding sits in one group.
 
 ## 5. Revise
 
-Fix the document for each real finding. Leave unclear ones as questions for
-the user. Run another round, with the same brief and fresh reviewers, only
+When the document is your own, or the user asked for a revision, fix it for
+each real finding. Otherwise, such as a second opinion on the user's own
+document, list the fixes in the report and change nothing. Leave unclear
+findings as questions for the user. Run another round, with the same brief and fresh reviewers, only
 when a fix changed a claim, a number or a recommendation; a wording fix does
 not need one. Stop after three rounds and report what is still open. Done
 when no fix is left unreviewed that changed a claim.
@@ -82,7 +85,7 @@ when no fix is left unreviewed that changed a claim.
 
 When the user wants candidates ranked (names, logos, designs, options), each
 reviewer scores every candidate on fixed criteria instead of listing
-findings:
+findings. Steps 1 and 2 apply; steps 3 to 5 do not, and this replaces them:
 
 - The brief names the criteria, the scale and what each end means, and the
   user's fixed picks and taste first, since a criterion can work against

@@ -39,11 +39,12 @@ function Link($target, $path, $kind) {   # kind: dir (junction) or file (symlink
     # A copy this script made carries its hash in "<file>.tmstack" beside it and is refreshed. Any
     # other file there is the user's, or was edited since, and is left alone, as install.sh does.
     $stamp = "$path.tmstack"; $hash = (Get-FileHash $path).Hash
-    $ours = (Test-Path $stamp) -and ((Get-Content $stamp -Raw).Trim() -eq $hash)
+    $ours = (Test-Path $stamp) -and ("$(Get-Content $stamp -Raw)".Trim() -eq $hash)
     if ((Get-Content $path -Raw) -eq (Get-Content $target -Raw)) {
       "  ok     $path (copy, up to date)"; if (-not $ours -and -not $DryRun) { Set-Content $stamp $hash }; return
     }
-    if (-not $ours) { "  SKIP   $path exists and is not a copy this script made"; return }
+    # A copy from before the stamp has none either: deleting it once lets the next run copy it afresh.
+    if (-not $ours) { "  SKIP   $path differs and is not a stamped copy from this script (an old copy of it: delete it and run again)"; return }
     "  update $path (copy)"; if (-not $DryRun) { Copy-Item $target $path; Set-Content $stamp (Get-FileHash $path).Hash }; return
   } elseif ($item) {
     "  SKIP   $path exists and is not a link"; return
