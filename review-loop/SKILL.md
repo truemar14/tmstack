@@ -17,6 +17,8 @@ diff and the PR's goal, and none of the conversation that produced it.
   (`CLAUDE.md`, `REVIEW.md`, `CONTRIBUTING.md`) when they exist.
 - When the user names a reviewer (another harness, another model), use that
   one.
+- When the repo's rules ask for more than one reviewer (such as two models),
+  a round is clean only when each of them returns nothing on the same head.
 
 If none of these is available, say so, then review the diff alone without
 reopening the work's history.
@@ -53,7 +55,9 @@ until that one push), and every review thread on the PR is addressed. A
 round that needed fixes is never clean, because the fixes themselves are
 unreviewed. Repeat rounds until one is clean.
 After three rounds in a row that each needed fixes, stop and report the PR as
-blocked with the findings that keep coming back. Done when the latest round
+blocked with the findings that keep coming back. On a repo that rations CI
+runs, push the local fixes once when you report it blocked, and say they are
+unreviewed. Done when the latest round
 on the current head is clean, or the PR is reported blocked.
 
 ## 3. Merge

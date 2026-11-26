@@ -34,7 +34,7 @@ Artifact tool allows, within its size limit.
   style everything through its tokens: pages then look alike and follow the
   viewer's theme. This is the document's own style; it does not apply inside
   UI mocks (below).
-- Use semantic HTML, inline CSS, inline SVG, and HTTPS or data-URL images. A
+- Use semantic HTML, inline CSS, inline SVG, and data-URL images. A
   library or font loads only from a host the Artifact tool allows, at a pinned
   version. No frames, embeds, or forms.
 - Write your own script inline as a classic script, only when interactivity
