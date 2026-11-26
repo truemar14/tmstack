@@ -32,3 +32,10 @@ Without the variable the check is skipped.
 - A skill here names no machine, person or company. Those belong in
   the user's private instructions; a skill says "the user" and reads the
   rest from there.
+
+## Merging
+
+A pull request here merges once CI is green and fresh reviewers on two
+different models, each with only the diff and its goal, find nothing left to
+fix. The agent that wrote it may then merge it. A change to this rule, to
+`install.sh`, `install.ps1` or the CI workflow waits for the owner.
