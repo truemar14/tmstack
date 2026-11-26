@@ -32,7 +32,8 @@ Write one brief, the same for every reviewer:
 - The sources a reviewer may read to check a claim, and that it changes
   nothing.
 - The answer's shape: one line per finding, with the passage, why it is
-  wrong, and the evidence.
+  wrong, and the evidence. Then one line per passage the reviewer checked
+  and found sound, so a finding from another reviewer can be disputed.
 
 Leave out the conversation, your own view of the document and what an earlier
 reviewer said: a reviewer handed a conclusion tends to return it confirmed.
@@ -62,11 +63,11 @@ Done when every finding has a verdict with its evidence.
 
 Sort the real and unclear findings into three groups:
 
-- **Agreed**: raised by more than one reviewer, and no reviewer took the
-  other side.
-- **Disputed**: reviewers took opposite sides. Give each side in one line and
-  your verdict from the source.
-- **One reviewer only**: raised by one, and no reviewer took the other side.
+- **Agreed**: raised by more than one reviewer, and disputed by none.
+- **Disputed**: another reviewer found the same passage sound, or asked for
+  the opposite change to it. Give each side in one line and your verdict from
+  the source.
+- **One reviewer only**: raised by one, and disputed by none.
 
 A finding raised by one reviewer is not weaker for it: the check decides, not
 the count. Done when each real or unclear finding sits in one group.
@@ -76,7 +77,7 @@ the count. Done when each real or unclear finding sits in one group.
 When the document is your own, or the user asked for a revision, fix it for
 each real finding. Otherwise, such as a second opinion on the user's own
 document, list the fixes in the report and change nothing. Leave unclear
-findings as questions for the user. Run another round, with the same brief and fresh reviewers, only
+findings as questions for the user. Run another round, with the same brief on the revised document and fresh reviewers, only
 when a fix changed a claim, a number or a recommendation; a wording fix does
 not need one. Stop after three rounds and report what is still open. Done
 when no fix is left unreviewed that changed a claim.
@@ -85,13 +86,16 @@ when no fix is left unreviewed that changed a claim.
 
 When the user wants candidates ranked (names, logos, designs, options), each
 reviewer scores every candidate on fixed criteria instead of listing
-findings. Steps 1 and 2 apply; steps 3 to 5 do not, and this replaces them:
+findings. Steps 1 and 2 apply, with these changes; steps 3 to 5 do not:
 
-- The brief names the criteria, the scale and what each end means, and the
-  user's fixed picks and taste first, since a criterion can work against
-  them.
+- The brief names the candidates, the criteria, the scale and what each end
+  means, and the user's fixed picks and taste first, since a criterion can
+  work against them. It asks for one score per candidate and criterion with a
+  one-line reason, in place of findings.
 - Each reviewer scores alone. Average the scores per candidate and criterion,
   and show where reviewers differ by more than a quarter of the scale.
+- Rank by the mean of a candidate's criterion averages, unless the user
+  weighted the criteria; then use their weights.
 - Reviewers grade relative to what they see, so when new candidates join,
   score the current leader again beside them.
 

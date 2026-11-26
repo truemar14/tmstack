@@ -44,7 +44,7 @@ function Link($target, $path, $kind) {   # kind: dir (junction) or file (symlink
       "  ok     $path (copy, up to date)"; if (-not $ours -and -not $DryRun) { Set-Content $stamp $hash }; return
     }
     # A copy from before the stamp has none either: deleting it once lets the next run copy it afresh.
-    if (-not $ours) { "  SKIP   $path differs and is not a stamped copy from this script (an old copy of it: delete it and run again)"; return }
+    if (-not $ours) { "  SKIP   $path differs and has no stamp from this script. If it is an old copy this script made, delete it and run again; if it is your own, it stays."; return }
     "  update $path (copy)"; if (-not $DryRun) { Copy-Item $target $path; Set-Content $stamp (Get-FileHash $path).Hash }; return
   } elseif ($item) {
     "  SKIP   $path exists and is not a link"; return

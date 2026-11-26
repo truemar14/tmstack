@@ -53,8 +53,12 @@ fi
 # Em dash, en dash and arrows (U+2014, U+2013, U+2190, U+2192, U+2194, U+21D2, U+27F6), as fixed
 # UTF-8 bytes, so the check needs neither PCRE nor a UTF-8 locale. git grep exits 1 on no match;
 # anything above that is a problem, not a pass. A directory outside git has no tracked files to check.
-if ! git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1; then
-  echo "not a git repo: skipped the dash and arrow check"
+if ! gitdir=$(git -C "$REPO" rev-parse --git-dir 2>&1); then
+  if [[ $gitdir == *"not a git repository"* ]]; then
+    echo "not a git repo: skipped the dash and arrow check"
+  else
+    problem "could not check for dashes and arrows: $gitdir"
+  fi
 else
   set +e
   marks=$(git -C "$REPO" grep -n -I -F -e $'\xe2\x80\x94' -e $'\xe2\x80\x93' -e $'\xe2\x86\x90' -e $'\xe2\x86\x92' \
