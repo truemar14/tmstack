@@ -39,7 +39,9 @@ written down.
    go in the report with the reason, since the reviewer's findings never
    appear on the PR.
 3. Push, then check CI on the new head, and work any new review-bot or human
-   comments: check each against the source, fix the real ones, reply with
+   comments. Where the repo's rules ration CI runs per PR, run the rounds on
+   the local head and push once a round is clean, so the PR gets one run;
+   then work the comments: check each against the source, fix the real ones, reply with
    the reason to the rest, and keep the PR to its original goal.
 
 A round is **clean** when a fresh reviewer, looking at the current head,

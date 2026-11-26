@@ -42,6 +42,12 @@ Without Playwright either, the app is out of reach, as below.
 When the real target is out of reach (another machine, a signed-in account, a
 device), say exactly which part you could not check and why.
 
+A phone is not out of reach for layout, colour or text: a phone-sized
+screenshot in the browser engine the phone uses decides those, and you decide
+from it. Hand the user only what no browser can show, such as installing the
+app to a home screen, the camera, push notifications on the device, or a
+wallet payment, and only the way the repo's rules say to send it.
+
 A test that fails once and then passes is a finding. Make it fail every time
 (run it in a loop, slow what it waits on), then fix the cause. When the cause
 is outside this change, or it never fails again, name it as unchecked.
