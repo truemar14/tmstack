@@ -44,6 +44,7 @@ done
 # The README table's rows read "| `name/` | ...": each must be a skill directory, and each skill
 # directory a row.
 if [[ -f $REPO/README.md ]]; then
+  # shellcheck disable=SC2016 # the backticks are literal README text, not a command
   listed=$(sed -n 's/^| `\([^`/]*\)\/` |.*/\1/p' "$REPO/README.md" | sort)
   present=$(for s in "$REPO"/*/SKILL.md; do if [[ -f $s ]]; then basename "$(dirname "$s")"; fi; done | sort)
   for n in $(comm -23 <(echo "$present") <(echo "$listed")); do problem "README.md: no row for skill '$n'"; done
