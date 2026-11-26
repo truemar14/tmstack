@@ -36,6 +36,8 @@ Without the variable the check is skipped.
 ## Merging
 
 A pull request here merges once CI is green and fresh reviewers on two
-different models, each with only the diff and its goal, find nothing left to
-fix. The agent that wrote it may then merge it. A change to this rule, to
-`install.sh`, `install.ps1` or the CI workflow waits for the owner.
+different models, each with the diff, its goal and this repo's rules and none
+of the conversation that wrote it, find nothing left to fix on the same final
+head. The agent that wrote it may then merge it. A change to this rule, to
+`install.sh`, `install.ps1`, `check-skills.sh` or the CI workflow waits for
+the owner.

@@ -41,7 +41,8 @@ written down.
 3. Where the repo's rules ration CI runs per PR, do not push between rounds:
    repeat steps 1 and 2 on the local head, with the repo's local checks in
    place of CI, until a round is clean, then push once, so the fixes cost one
-   run. Otherwise push after each round. Then check CI on the new head, and
+   run. Give the reviewer the local diff range (`origin/<base>...HEAD`), not
+   the PR number, since the PR shows only the pushed head. Otherwise push after each round. Then check CI on the new head, and
    work any new review-bot or human comments: check each against the source,
    fix the real ones, reply with the reason to the rest, and keep the PR to
    its original goal.
@@ -59,7 +60,7 @@ on the current head is clean, or the PR is reported blocked.
 
 A PR merges on a clean round when the user asked for a merge in this task, or
 when the repo's **merge gate** lets it merge on green. The gate is in the
-repo's `AGENTS.md` or the user's instructions: what may merge on green, and
+repo's `AGENTS.md` or `CONTRIBUTING.md`, or the user's instructions: what may merge on green, and
 what waits for the owner's word. A PR the gate holds merges only when the
 user asks in this task to merge that PR by name; a batch ask merges only what
 the gate allows. A held PR without that ask is reported ready, with what it
