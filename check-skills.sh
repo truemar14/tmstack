@@ -4,7 +4,9 @@
 # layout is checked with this same script, as install.sh installs it.
 # For every top-level directory with a SKILL.md: the frontmatter opens on line 1 and closes, `name`
 # matches the directory, `description` is not empty, and metadata.platform holds only values
-# install.sh and install.ps1 understand. Then, when PRIVATE_NAMES is set (one term per
+# install.sh and install.ps1 understand. The README's skill table names every skill directory, and
+# only those. No tracked file holds an em dash, an en dash or an arrow, the house rule for every
+# document here (unslop/SKILL.md quotes them as examples, so it is exempt). Then, when PRIVATE_NAMES is set (one term per
 # line, matched as whole words, any case), no tracked file may contain any of its terms. The terms
 # live outside this repo, in a CI secret, because listing them here would publish them.
 # Usage: ./check-skills.sh [<repo>]   (exits 1 and prints one line per problem; run it from anywhere)
@@ -38,6 +40,19 @@ for skill in "$REPO"/*/SKILL.md; do
     [[ $PLATFORMS == *" $v "* ]] || problem "$rel: unknown platform '$v' (expected one of${PLATFORMS% })"
   done
 done
+
+# The README table's rows read "| `name/` | ...": each must be a skill directory, and each skill
+# directory a row.
+if [[ -f $REPO/README.md ]]; then
+  listed=$(sed -n 's/^| `\([^`/]*\)\/` |.*/\1/p' "$REPO/README.md" | sort)
+  present=$(for s in "$REPO"/*/SKILL.md; do [[ -f $s ]] && basename "$(dirname "$s")"; done | sort)
+  for n in $(comm -23 <(echo "$present") <(echo "$listed")); do problem "README.md: no row for skill '$n'"; done
+  for n in $(comm -13 <(echo "$present") <(echo "$listed")); do problem "README.md: row for '$n', which is not a skill directory"; done
+fi
+
+# Em dash, en dash and arrows (U+2014, U+2013, U+2190, U+2192, U+2194, U+21D2, U+27F6).
+marks=$(LC_ALL=C.UTF-8 git -C "$REPO" grep -n -I -P '[\x{2014}\x{2013}\x{2190}\x{2192}\x{2194}\x{21D2}\x{27F6}]' -- . ':!unslop/SKILL.md' | cut -d: -f1,2 || true)
+[[ -z $marks ]] || problem "em dash, en dash or arrow at (write a period, a comma or words):"$'\n'"$marks"
 
 if [[ -n ${PRIVATE_NAMES:-} ]]; then
   terms=$(printf '%s\n' "$PRIVATE_NAMES" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; /^$/d')
