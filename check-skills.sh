@@ -4,7 +4,9 @@
 # layout is checked with this same script, as install.sh installs it.
 # For every top-level directory with a SKILL.md: the frontmatter opens on line 1 and closes, `name`
 # matches the directory, `description` is not empty, and metadata.platform holds only values
-# install.sh and install.ps1 understand. Then, when PRIVATE_NAMES is set (one term per
+# install.sh and install.ps1 understand. The README's skill table names every skill directory, and
+# only those. No tracked file holds an em dash, an en dash or an arrow, the house rule for every
+# document here (unslop/SKILL.md quotes them as examples, so it is exempt). Then, when PRIVATE_NAMES is set (one term per
 # line, matched as whole words, any case), no tracked file may contain any of its terms. The terms
 # live outside this repo, in a CI secret, because listing them here would publish them.
 # Usage: ./check-skills.sh [<repo>]   (exits 1 and prints one line per problem; run it from anywhere)
@@ -38,6 +40,38 @@ for skill in "$REPO"/*/SKILL.md; do
     [[ $PLATFORMS == *" $v "* ]] || problem "$rel: unknown platform '$v' (expected one of${PLATFORMS% })"
   done
 done
+
+# The README table's rows read "| `name/` | ...": each must be a skill directory, and each skill
+# directory a row.
+if [[ -f $REPO/README.md ]]; then
+  # shellcheck disable=SC2016 # the backticks are literal README text, not a command
+  listed=$(sed -n 's/^| `\([^`/]*\)\/` |.*/\1/p' "$REPO/README.md" | sort)
+  present=$(for s in "$REPO"/*/SKILL.md; do if [[ -f $s ]]; then basename "$(dirname "$s")"; fi; done | sort)
+  for n in $(comm -23 <(echo "$present") <(echo "$listed")); do problem "README.md: no row for skill '$n'"; done
+  for n in $(comm -13 <(echo "$present") <(echo "$listed")); do problem "README.md: row for '$n', which is not a skill directory"; done
+fi
+
+# Em dash, en dash and arrows (U+2014, U+2013, U+2190, U+2192, U+2194, U+21D2, U+27F6), as fixed
+# UTF-8 bytes, so the check needs neither PCRE nor a UTF-8 locale. git grep exits 1 on no match;
+# anything above that is a problem, not a pass. A directory outside git has no tracked files to check.
+if ! gitdir=$(git -C "$REPO" rev-parse --git-dir 2>&1); then
+  if [[ $gitdir == *"not a git repository"* ]]; then
+    echo "not a git repo: skipped the dash and arrow check"
+  else
+    problem "could not check for dashes and arrows: $gitdir"
+  fi
+else
+  set +e
+  marks=$(git -C "$REPO" grep -n -I -F -e $'\xe2\x80\x94' -e $'\xe2\x80\x93' -e $'\xe2\x86\x90' -e $'\xe2\x86\x92' \
+    -e $'\xe2\x86\x94' -e $'\xe2\x87\x92' -e $'\xe2\x9f\xb6' -- . ':!unslop/SKILL.md' 2>&1)
+  status=$?
+  set -e
+  if (( status == 0 )); then
+    problem "em dash, en dash or arrow at (write a period, a comma or words):"$'\n'"$(cut -d: -f1,2 <<<"$marks")"
+  elif (( status > 1 )); then
+    problem "could not check for dashes and arrows: $marks"
+  fi
+fi
 
 if [[ -n ${PRIVATE_NAMES:-} ]]; then
   terms=$(printf '%s\n' "$PRIVATE_NAMES" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; /^$/d')

@@ -17,6 +17,8 @@ diff and the PR's goal, and none of the conversation that produced it.
   (`CLAUDE.md`, `REVIEW.md`, `CONTRIBUTING.md`) when they exist.
 - When the user names a reviewer (another harness, another model), use that
   one.
+- When the repo's rules ask for more than one reviewer (such as two models),
+  a round is clean only when each of them returns nothing on the same head.
 
 If none of these is available, say so, then review the diff alone without
 reopening the work's history.
@@ -38,23 +40,31 @@ written down.
 2. Verify each finding against the source. Fix the real ones; the false ones
    go in the report with the reason, since the reviewer's findings never
    appear on the PR.
-3. Push, then check CI on the new head, and work any new review-bot or human
-   comments: check each against the source, fix the real ones, reply with
-   the reason to the rest, and keep the PR to its original goal.
+3. Where the repo's rules ration CI runs per PR, do not push between rounds:
+   repeat steps 1 and 2 on the local head, with the repo's local checks in
+   place of CI, until a round is clean, then push once, so the fixes cost one
+   run. Give the reviewer the local diff range (`origin/<base>...HEAD`), not
+   the PR number, since the PR shows only the pushed head. Otherwise push after each round. Then check CI on the new head, and
+   work any new review-bot or human comments: check each against the source,
+   fix the real ones, reply with the reason to the rest, and keep the PR to
+   its original goal.
 
 A round is **clean** when a fresh reviewer, looking at the current head,
-returns no real findings, CI is green, and every review thread on the PR is
-addressed. A round that needed fixes is never clean,
-because the fixes themselves are unreviewed. Repeat rounds until one is clean.
+returns no real findings, CI is green (on a rationed repo, the local checks
+until that one push), and every review thread on the PR is addressed. A
+round that needed fixes is never clean, because the fixes themselves are
+unreviewed. Repeat rounds until one is clean.
 After three rounds in a row that each needed fixes, stop and report the PR as
-blocked with the findings that keep coming back. Done when the latest round
+blocked with the findings that keep coming back. On a repo that rations CI
+runs, push the local fixes once when you report it blocked, and say they are
+unreviewed. Done when the latest round
 on the current head is clean, or the PR is reported blocked.
 
 ## 3. Merge
 
 A PR merges on a clean round when the user asked for a merge in this task, or
 when the repo's **merge gate** lets it merge on green. The gate is in the
-repo's `AGENTS.md` or the user's instructions: what may merge on green, and
+repo's `AGENTS.md` or `CONTRIBUTING.md`, or the user's instructions: what may merge on green, and
 what waits for the owner's word. A PR the gate holds merges only when the
 user asks in this task to merge that PR by name; a batch ask merges only what
 the gate allows. A held PR without that ask is reported ready, with what it

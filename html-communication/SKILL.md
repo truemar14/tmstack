@@ -23,7 +23,8 @@ report or review with no format named is an HTML page.
 
 ## Document
 
-One self-contained HTML file, capped at 512 KB.
+One HTML file, everything inline except a library or font from a host the
+Artifact tool allows, within its size limit.
 
 - Write it like a spec, not a landing page: dense, scannable, no hero,
   decorative chrome or marketing voice. Before publishing, call the Skill
@@ -33,10 +34,11 @@ One self-contained HTML file, capped at 512 KB.
   style everything through its tokens: pages then look alike and follow the
   viewer's theme. This is the document's own style; it does not apply inside
   UI mocks (below).
-- Use semantic HTML, inline CSS, inline SVG, and HTTPS or data-URL images. No
-  linked stylesheets, external or module scripts, frames, embeds, or forms.
-- Use an inline classic script only when interactivity materially helps, and
-  keep the page readable without it.
+- Use semantic HTML, inline CSS, inline SVG, and data-URL images. A
+  library or font loads only from a host the Artifact tool allows, at a pinned
+  version. No frames, embeds, or forms.
+- Write your own script inline as a classic script, only when interactivity
+  materially helps, and keep the page readable without it.
 - Give external links `target="_blank"` and `rel="noopener noreferrer"`.
 - Write a complete document: doctype, `<meta charset>`, the viewport meta,
   `<title>`, `<style>`, then the content in `<main>`.

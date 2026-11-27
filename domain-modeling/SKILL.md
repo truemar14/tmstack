@@ -53,8 +53,9 @@ Create files lazily, only when you have something to write. If no
 
 The glossary is needed in every conversation about the project, so it loads
 in every session rather than sitting behind a pointer. When you create a
-`CONTEXT.md`, import it from the repo's `CLAUDE.md` with a line that reads
-`@CONTEXT.md`. ADRs stay behind a pointer:
+`CONTEXT.md`, import it from the repo's `AGENTS.md` (or `CLAUDE.md` when
+there is no `AGENTS.md`) with a line that reads `@CONTEXT.md`, and leave the
+rest of the file as it is. ADRs stay behind a pointer:
 they matter only on the branch that touches their area.
 
 ## During the session

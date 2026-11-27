@@ -42,6 +42,13 @@ Without Playwright either, the app is out of reach, as below.
 When the real target is out of reach (another machine, a signed-in account, a
 device), say exactly which part you could not check and why.
 
+A phone is not out of reach for layout, colour or text: a phone-sized
+screenshot in the browser engine the phone uses decides those, and you decide
+from it. Hand the user only what no browser can show, such as installing the
+app to a home screen, the camera, push notifications on the device, or a
+wallet payment, the way the repo's rules say to send it, or under Needs you
+when they name none.
+
 A test that fails once and then passes is a finding. Make it fail every time
 (run it in a loop, slow what it waits on), then fix the cause. When the cause
 is outside this change, or it never fails again, name it as unchecked.
@@ -71,8 +78,8 @@ The handoff has three parts, in this order:
 
 1. **Checked**: what you saw working, one line each, with a screenshot when
    the change is visual.
-2. **Needs you**: the steps only the user can do (a physical device, a login,
-   an approval, a purchase), numbered, each with the exact place to click or
+2. **Needs you**: the steps only the user can do (what only a physical
+   device shows, a login, an approval, a purchase), numbered, each with the exact place to click or
    the exact command.
 3. **Scenarios**: numbered test cases for the user, each one line of setup,
    one line of action, and the expected result. Cover what changed and the

@@ -58,6 +58,7 @@ jobs:
           New-Item -ItemType Junction -Path "$HOME\.claude\skills\gone" -Target "$env:RUNNER_TEMP\other\gone" | Out-Null
           Remove-Item "$env:RUNNER_TEMP\other\gone"
           $s = "$HOME\.claude\skills"
+          Set-Content "$HOME\.claude\AGENTS.md" "mine"
           $out = powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 "$env:RUNNER_TEMP\other" -DryRun | Out-String -Width 4096
           $out
           if ($out -notmatch 'claude\\skills\\demo' -or $out -notmatch 'claude\\AGENTS.md') { exit 1 }
@@ -66,4 +67,6 @@ jobs:
           powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 "$env:RUNNER_TEMP\other"
           if (-not (Test-Path "$s\demo") -or -not (Test-Path "$s\mine") -or -not (Test-Path "$s\theirs")) { exit 1 }
           if (Test-Path "$s\gone") { exit 1 }
+          # The user's own AGENTS.md there was not overwritten.
+          if ((Get-Content "$HOME\.claude\AGENTS.md" -Raw).Trim() -ne 'mine') { exit 1 }
         shell: pwsh

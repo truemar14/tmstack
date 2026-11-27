@@ -44,8 +44,12 @@ step through the harness's GitHub tools.
    drafted with every image linked at its commit's SHA; or the description
    says the media is pending and why; or the change has nothing visible to
    show.
-7. **Title and description.** Written by the rules below, then call the
-   Skill tool with `unslop` and apply it to both. Done: both pass its rules.
+7. **Title and description.** Written by the rules below. When the repo has
+   a PR template (`.github/pull_request_template.md` or a file under
+   `.github/PULL_REQUEST_TEMPLATE/`), the description fills its headings in
+   its order instead, with the rules below for the words under each. Then call
+   the Skill tool with `unslop` and apply it to both. Done: both pass its
+   rules, and every heading of the template has its answer.
 8. **Create or update.** Push with `git push -u origin HEAD`, adding
    `--force-with-lease` when the repo's rules had step 3 rebase a pushed
    branch. New PR:

@@ -5,7 +5,8 @@
 # Skill directories become junctions (no admin needed) in ~/.claude/skills when metadata.platform
 # allows win32 (default: all). CLAUDE.md (or AGENTS.md when there is no CLAUDE.md) goes into
 # ~/.claude when the checkout has it: a symlink when the shell is elevated or Developer Mode is on,
-# and a copy otherwise, refreshed on every run. Links into the repo are re-pointed and removed when
+# and a copy otherwise, refreshed on every run. A file there that this script did not copy is left
+# alone. Links into the repo are re-pointed and removed when
 # their skill folder is gone; a link to anywhere else, or a real directory in the way, is left alone
 # and reported.
 # Usage: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 [-DryRun] [<repo>]
@@ -35,8 +36,16 @@ function Link($target, $path, $kind) {   # kind: dir (junction) or file (symlink
     "  relink $path"
     if (-not $DryRun) { if ($kind -eq 'dir') { [IO.Directory]::Delete($path) } else { [IO.File]::Delete($path) } }
   } elseif ($item -and $kind -eq 'file') {
-    if ((Get-Content $path -Raw) -eq (Get-Content $target -Raw)) { "  ok     $path (copy, up to date)"; return }
-    "  update $path (copy)"; if (-not $DryRun) { Copy-Item $target $path }; return
+    # A copy this script made carries its hash in "<file>.tmstack" beside it and is refreshed. Any
+    # other file there is the user's, or was edited since, and is left alone, as install.sh does.
+    $stamp = "$path.tmstack"; $hash = (Get-FileHash $path).Hash
+    $ours = (Test-Path $stamp) -and ("$(Get-Content $stamp -Raw)".Trim() -eq $hash)
+    if ((Get-Content $path -Raw) -eq (Get-Content $target -Raw)) {
+      "  ok     $path (copy, up to date)"; if (-not $ours -and -not $DryRun) { Set-Content $stamp $hash }; return
+    }
+    # A copy from before the stamp has none either: deleting it once lets the next run copy it afresh.
+    if (-not $ours) { "  SKIP   $path differs and has no stamp from this script. If it is an old copy this script made, delete it and run again; if it is your own, it stays."; return }
+    "  update $path (copy)"; if (-not $DryRun) { Copy-Item $target $path; Set-Content $stamp (Get-FileHash $path).Hash }; return
   } elseif ($item) {
     "  SKIP   $path exists and is not a link"; return
   } else { "  link   $path" }
@@ -44,7 +53,10 @@ function Link($target, $path, $kind) {   # kind: dir (junction) or file (symlink
   New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null
   if ($kind -eq 'dir') { New-Item -ItemType Junction -Path $path -Target $target | Out-Null; return }
   try { New-Item -ItemType SymbolicLink -Path $path -Target $target -ErrorAction Stop | Out-Null }
-  catch { Copy-Item $target $path; "         copied instead: symlinks need an elevated shell or Developer Mode" }
+  catch {
+    Copy-Item $target $path; Set-Content "$path.tmstack" (Get-FileHash $path).Hash
+    "         copied instead: symlinks need an elevated shell or Developer Mode"
+  }
 }
 
 # Instruction files are linked only when this checkout has them, so a skills-only repo and a private
